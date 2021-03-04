@@ -9,7 +9,7 @@
 #include <thread>
 #include <mutex>
 #include <vector>
-
+#include <mi/thread_safe_counter.hpp>
 int main(int argc, char **argv) {
         if (argc != 2) {
                 std::cerr << "Usage " << argv[0] << " <input_dir>" << std::endl;
@@ -25,7 +25,6 @@ int main(int argc, char **argv) {
                 std::cerr << "Images not found" << std::endl;
                 return -1;
         }
-
         auto[sx0, sy0, type0] = getSizeType(files[0].string());
         int sx = sx0;
         int sy = sy0;
@@ -38,17 +37,13 @@ int main(int argc, char **argv) {
                 return ss2.str();
         };
 
-        int counter = 0;
+        mi::thread_safe_counter counter;
+        //int counter = 0;
         auto divide_mt = [&sx, &sy, &sz, &counter, &get_filename, &files, &output_dir]() {
                 int z = -1;
                 while (1) {
-                        std::mutex mtx;
-                        {
-                                std::lock_guard<std::mutex> lock(mtx); // mtxを使ってロックする
-                                z = counter;
-                                ++counter;
-                                std::cerr<<z<<std::endl;
-                        }
+                        z = counter.get();
+                        std::cerr<<z<<std::endl;
                         if ( z >= sz ) break;
 			std::stringstream ss;
 			ss<<output_dir<<"/"<<std::setw(5)<<std::setfill('0')<<z;

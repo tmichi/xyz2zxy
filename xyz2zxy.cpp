@@ -10,7 +10,7 @@
 #include <mutex>
 #include <vector>
 
-
+#include <mi/thread_safe_counter.hpp>
 std::tuple<int, int, int> getSizeType(const std::string &f) {
         cv::Mat img = cv::imread(f, cv::IMREAD_ANYDEPTH | cv::IMREAD_COLOR);
         return std::make_tuple(img.cols, img.rows, img.type());
@@ -35,22 +35,18 @@ int main(int argc, char **argv) {
         int type = type0;
         std::cerr << "Size:" << sx << " " << sy << " " << sz << " " << type << std::endl;
         auto get_filename = [](const int y, const int z) {
+                //return fmt::format("tmp{:06d}-{:06d}.tif",z,y);
                 std::stringstream ss2;
                 ss2 << "temp" << std::setw(6) << std::setfill('0') << z << "-" << std::setw(6) << std::setfill('0') << y << ".tif";
                 return ss2.str();
         };
 
-        int counter = 0;
+        mi::thread_safe_counter counter;
         auto divide_mt = [&sx, &sy, &sz, &counter, &get_filename, &files]() {
                 int z = -1;
                 while (1) {
-                        std::mutex mtx;
-                        {
-                                std::lock_guard<std::mutex> lock(mtx); // mtxを使ってロックする
-                                z = counter;
-                                ++counter;
-                                std::cerr<<z<<std::endl;
-                        }
+                        z = counter.get();
+                        std::cerr<<z<<std::endl;
                         if ( z >= sz ) break;
                         cv::Mat img = cv::imread(files[z].string(), cv::IMREAD_ANYDEPTH | cv::IMREAD_COLOR);
                         for (int y = 0; y < sy; ++y) {
@@ -63,13 +59,8 @@ int main(int argc, char **argv) {
         auto collect_mt = [&sx, &sy, &sz, &counter, type, &get_filename]() {
                 int y = -1 ;
                 while (1) {
-                        std::mutex mtx;
-                        {
-                                std::lock_guard<std::mutex> lock(mtx); // mtxを使ってロックする
-                                y = counter;
-                                ++counter;
-                                std::cerr<<y<<std::endl;
-                        }
+                        y = counter.get();
+                        std::cerr<<y<<std::endl;
                         if ( y >= sy ) break;
                         cv::Mat composite(sz, sx, type);
                         for (int z = 0; z < sz; ++z) {
@@ -79,13 +70,14 @@ int main(int argc, char **argv) {
                         std::stringstream ss;
                         std::string header("result");
                         ss << header << std::setw(6) << std::setfill('0') << y << ".tif";
+                        //return fmt::format("{}{:06d}-{:06d}.tif",header,y);
                         cv::imwrite(ss.str(), composite);
                 }
         };
 
         int nt = 4;
         std::vector<std::thread> ths;
-        counter = 0;
+        counter.reset(0);
         for (int i = 0 ; i < nt ; ++i ) {
                 ths.push_back( std::thread (divide_mt) );
         }
@@ -94,7 +86,7 @@ int main(int argc, char **argv) {
         }
         ths.clear();
         std::cerr<<"divide done"<<std::endl;
-        counter = 0;
+        counter.reset(0);
         for (int i = 0 ; i < nt ; ++i ) {
                 ths.push_back( std::thread (collect_mt) );
         }

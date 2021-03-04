@@ -10,7 +10,7 @@
 #include <thread>
 #include <mutex>
 #include <vector>
-
+#include <mi/thread_safe_counter.hpp>
 
 std::tuple<int, int, int> getSizeType(const std::string &f) {
         cv::Mat img = cv::imread(f, cv::IMREAD_ANYDEPTH | cv::IMREAD_COLOR);
@@ -43,17 +43,13 @@ int main(int argc, char **argv) {
                 return ss2.str();
         };
 
-        int counter = 0;
+        //int counter = 0;
+        mi::thread_safe_counter counter;
         auto divide_mt = [&sx, &y0, &sz, &counter, &get_filename, &files]() {
                 int z = -1;
                 while (1) {
-                        std::mutex mtx;
-                        {
-                                std::lock_guard<std::mutex> lock(mtx); // mtxを使ってロックする
-                                z = counter;
-                                ++counter;
-                                std::cerr<<z<<std::endl;
-                        }
+                        z = counter.get();
+                        std::cerr<<z<<std::endl;
                         if ( z >= sz ) break;
                         cv::Mat img = cv::imread(files[z].string(), cv::IMREAD_ANYDEPTH | cv::IMREAD_COLOR);
                                 cv::Rect r(0, y0, sx, 1);
@@ -62,12 +58,10 @@ int main(int argc, char **argv) {
                        
                 }
         };
-
-
         int nt = std::thread::hardware_concurrency();
 	std::cerr<<nt<<std::endl;
         std::vector<std::thread> ths;
-        counter = 0;
+        counter.reset(0);
         for (int i = 0 ; i < nt ; ++i ) {
                 ths.push_back( std::thread (divide_mt) );
         }
@@ -76,7 +70,7 @@ int main(int argc, char **argv) {
         }
         ths.clear();
         std::cerr<<"divide done"<<std::endl;
-
+        
         cv::Mat composite(sz, sx, type);
         for (int z = 0; z < sz; ++z) {
                 cv::Mat clip = cv::imread(get_filename(y0, z), cv::IMREAD_ANYDEPTH | cv::IMREAD_COLOR);
@@ -86,9 +80,9 @@ int main(int argc, char **argv) {
         std::string header("result");
         ss << header << std::setw(6) << std::setfill('0') << y0 << ".tif";
         cv::imwrite(ss.str(), composite);
-
+        
         for (int z = 0; z < sz; ++z) {
-                        fs::remove(get_filename(y0, z));
+                fs::remove(get_filename(y0, z));
         }
         return 0;
 }
