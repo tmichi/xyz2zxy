@@ -14,7 +14,7 @@ Convert XY-cross sectional images to ZX-cross sectional images.
 ## Requirements
 * CMake 
 * C++17 or later (filesystem)
-* OpenCV ( probabliy >2.0.0. )
+* OpenCV ( >3.0.0. )
 * fmt (https://fmt.dev) (v.8.0.1 or later)
 ## Build and Test 
 ### Unix-like System with CMake 
