@@ -1,4 +1,4 @@
-#xyz2zxy
+# xyz2zxy
 
 Convert XY-cross sectional images to ZX-cross sectional images.
 
