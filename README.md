@@ -28,6 +28,7 @@ Convert XY-cross sectional images to ZX-cross sectional images.
 * ``make check`` creates sasmple data and validates the result. 
 ### Windows (Visual Studio )
 * Use CMake to create the solution file.
+* Set CMAKE_PREFIX_PATH to OpenCV and fmt in order to call find_package().
 ### Other systems. 
 * See CMakeLists.txt
 ## Usage

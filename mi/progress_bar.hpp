@@ -14,10 +14,13 @@
 #include <type_traits>
 #include <iostream>
 #include <fmt/core.h>
+#if defined (WIN32) || defined (_WIN64)
+#include <windows.h>
+#endif
 namespace mi{
         template <typename T>
         inline auto progress_bar(const T v, const T vmax, const std::string header = "progress", const int ndots = 20) -> decltype(std::enable_if_t<std::is_arithmetic_v<T>, T>(), void()){
-                #ifdef WIN32
+                #if defined (WIN32) || defined (_WIN64)
                 DWORD mode = 0;
                 if (HANDLE handle = (HANDLE)_get_osfhandle(_fileno(stderr));!GetConsoleMode(handle, &mode) ){
                 }

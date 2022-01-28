@@ -15,16 +15,15 @@ SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_CXX_EXTENSIONS OFF)
 
 # Libraries
+IF(MSVC)
+#    set(CMAKE_PREFIX_PATH, "path-to-opencv" "path-to-fmt")
+ENDIF()
 find_package(OpenCV 4.0.0 REQUIRED)
 find_package(fmt REQUIRED)
 find_package(Threads REQUIRED)
 
 if (MSVC) #Visual Studio
     set(CMAKE_CXX_FLAGS "/W4")
-    set(CMAKE_CXX_FLAGS_RELEASE "/MT")
-    set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MT")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL "/MT")
 elseif (CMAKE_COMPILER_IS_GNUCXX) #UNIX
     set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic")
     set(CMAKE_CXX_FLAGS_DEBUG "-g3 -O0 -pg")
@@ -42,15 +41,15 @@ endif ()
 
 ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp Xyz2ZxyProgram.hpp Xyz2ZxyProgram.cpp)
 TARGET_INCLUDE_DIRECTORIES(xyz2zxy PRIVATE ${OpenCV_INCLUDE_DIRS} .)
-TARGET_LINK_LIBRARIES(xyz2zxy PRIVATE ${OpenCV_LIBS} fmt::fmt Threads::Threads)
+TARGET_LINK_LIBRARIES(xyz2zxy PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
 
 ADD_EXECUTABLE(make_sample make_sample.cpp)
 TARGET_INCLUDE_DIRECTORIES(make_sample PRIVATE ${OpenCV_INCLUDE_DIRS} .)
-TARGET_LINK_LIBRARIES(make_sample PRIVATE ${OpenCV_LIBS} fmt::fmt Threads::Threads)
+TARGET_LINK_LIBRARIES(make_sample PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
 
 ADD_EXECUTABLE(validate validate.cpp)
 TARGET_INCLUDE_DIRECTORIES(validate PRIVATE ${OpenCV_INCLUDE_DIRS} .)
-TARGET_LINK_LIBRARIES(validate PRIVATE ${OpenCV_LIBS} fmt::fmt Threads::Threads)
+TARGET_LINK_LIBRARIES(validate PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
 
 ADD_CUSTOM_TARGET(check
         COMMAND make_sample
