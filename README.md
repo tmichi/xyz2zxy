@@ -30,18 +30,18 @@ Convert XY-cross sectional images to ZX-cross sectional images.
 * Use CMake to create the solution file.
 ### Other systems. 
 * See CMakeLists.txt
-### Usage
+## Usage
 * ``xyz2zxy {input_dir} {output_dir} -n {n}``
   * ``input_dir`` : the directory where images are contained.
   * ``output_dir`` : the directory where converted images are saved.
   * ``n`` : the number of images that are lorded in the memory (Default : 100). Larger n computes faster, but requires large memory size.
 *  ``make_sample, validate`` : executables for validation.
-##License 
+## License 
 * MIT License
-##Developper
+## Developper
 * Takashi Michikawa <ram-axed-0b@icloud.com>, Image Processing Research Team, RIKEN Center for Advanced Photonics.
-##Copyrights 
+## Copyrights 
 * Main codes : (c)2021 - now RIKEN
 * mi/*.hpp : (c)2007 - now Takashi Michikawa
-##Acknowlegments
+## Acknowlegments
 * This work was supported by Council for Science, Technology and Innovation(CSTI), Cross-ministerial Strategic Innovation Promotion Program (SIP), “Materials Integration for revolutionary design system of structural materials”(Funding agency:JST).
