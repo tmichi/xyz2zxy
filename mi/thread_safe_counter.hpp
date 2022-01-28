@@ -1,6 +1,11 @@
-//
-// Created by Takashi Michikawa on 2020/10/17.
-//
+/**
+ * @file thread_safe_counter.hpp
+ * @brief
+ * @author Takashi Michikawa <tmichi@me.com>
+ * @copyright (c) 2020  Takashi Michikawa
+ * Released under the MIT license
+ * https://opensource.org/licenses/mit-license.php
+ */
 
 #ifndef MI_THREAD_SAFE_COUNTER_HPP
 #define MI_THREAD_SAFE_COUNTER_HPP 1
@@ -13,12 +18,13 @@ namespace mi {
         class thread_safe_counter {
         private:
                 T n_; ///< counter
+                std::mutex mtx_;
         public:
                 /**
                  * @brief Constructor.
                  * @param s Init value.
                  */
-                thread_safe_counter(const T s = T()) : n_(s) {}
+                explicit thread_safe_counter(const T s = T()) : n_(s) {}
 
                 thread_safe_counter(const thread_safe_counter &d) = delete;
 
@@ -37,8 +43,7 @@ namespace mi {
                  * @note can get value less than std:numeric_limits<T>::max()
                  */
                 const T get() {
-                        static std::mutex mtx;
-                        std::lock_guard <std::mutex> lock(mtx);
+                        std::lock_guard <std::mutex> lock(this->mtx_);
                         if ( this->n_ == std::numeric_limits<T>::max() ) {
                                 throw std::runtime_error("mi::thread_safe_counter<T>::get() : max value");
                         }
