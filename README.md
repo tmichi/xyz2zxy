@@ -1,4 +1,5 @@
 #xyz2zxy
+
 Convert XY-cross sectional images to ZX-cross sectional images.
 
 ![Teaser image of xyz2zxy](xyz2zxy_teaser.png "Example of the result.")
@@ -14,7 +15,7 @@ Convert XY-cross sectional images to ZX-cross sectional images.
 * CMake 
 * C++17 or later (filesystem)
 * OpenCV ( probabliy >2.0.0. )
-* fmt (https://fmt.dev)(v.8.0.1 or later)
+* fmt (https://fmt.dev) (v.8.0.1 or later)
 ## Build and Test 
 ### Unix-like System with CMake 
 ```bash
