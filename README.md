@@ -23,9 +23,9 @@ Convert XY-cross sectional images to ZX-cross sectional images.
 % cd build
 % cmake ..
 % make  
-% make check #validation
 %
 ```
+* ``make check`` creates sasmple data and validates the result. 
 ### Windows (Visual Studio )
 * Use CMake to create the solution file.
 ### Other systems. 
