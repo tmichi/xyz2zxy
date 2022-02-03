@@ -20,6 +20,7 @@
  * SOFTWARE.
  */
 #include "Xyz2ZxyProgram.hpp"
+#include "Version.hpp"
 #include <iostream>
 #include <algorithm>
 #include <opencv2/core.hpp>
@@ -29,21 +30,19 @@
 #include <mi/repeat.hpp>
 #include <mi/progress_bar.hpp>
 
-Xyz2ZxyProgram::Xyz2ZxyProgram(const mi::Argument &arg) : mi::ProgramTemplate(arg, "xyz2zxy"), output_dir_("output"), num_(100) {
+Xyz2ZxyProgram::Xyz2ZxyProgram(const mi::Argument &arg) : mi::ProgramTemplate(arg, "xyz2zxy", fmt::format("v.{}", XYZ2ZXY_VERSION)), output_dir_("output"), num_(100) , extension_(".tif"){
         std::filesystem::path input_dir;
-        std::filesystem::path extension {".tif"};
         this->getAttributeSet().createAttribute("-i", input_dir).setMessage("Input directory").setMandatory();
-        this->getAttributeSet().createAttribute("-o", this->output_dir_).setMessage("Output directory");
-        this->getAttributeSet().createAttribute("-n", this->num_).setMessage("The number of steps (Larger n is probably fast but it causes large memory consumption.)").setValidator(mi::attr::greater(0));
-        this->getAttributeSet().createAttribute("-ext", extension).setMessage("Extension of the images (e.g., .tif. Default : .tif)");
+        this->getAttributeSet().createAttribute("-o", this->output_dir_).setMessage("Output directory (default : output/)");
+        this->getAttributeSet().createAttribute("-n", this->num_).setMessage("The number of steps (Default: 100, Larger n is probably fast but it causes large memory consumption.)").setValidator(mi::attr::greater(0));
+        this->getAttributeSet().createAttribute("-ext", this->extension_).setMessage("Extension of the images (e.g., .tif, .png. Default : .tif)");
         if (!this->getAttributeSet().parse(arg)) {
                 std::cerr << "Usage :" << std::endl;
                 this->getAttributeSet().printUsage();
                 throw std::runtime_error("Insufficient arguments");
         }
-        std::remove_copy_if (std::filesystem::directory_iterator(input_dir), std::filesystem::directory_iterator(), std::back_inserter(this->image_paths_),[&extension](const auto& f){
-                return std::filesystem::is_directory(f) || f.path().filename().string().find_first_of(".") == 0 || f.path().extension()!= extension;
-        });
+        std::remove_copy_if (std::filesystem::directory_iterator(input_dir), std::filesystem::directory_iterator(), std::back_inserter(this->image_paths_),[&ext = this->extension_](const auto& f){
+                return std::filesystem::is_directory(f) || f.path().filename().string().find_first_of(".") == 0 || f.path().extension()!= ext;});
         if (this->image_paths_.empty()){
                 throw std::runtime_error("Empty images");
         }
@@ -59,17 +58,17 @@ Xyz2ZxyProgram::run() {
         auto& paths = this->image_paths_;
         std::filesystem::path tmpDir = this->output_dir_.string() + "_temp";
         std::filesystem::create_directories(tmpDir);
-        if (!std::filesystem::exists(tmpDir)) {
+        if (!std::filesystem::exists(tmpDir) || !std::filesystem::is_directory(tmpDir)) {
                 return false;
         }
 
         std::filesystem::create_directories(this->output_dir_);
-        if (!std::filesystem::exists(this->output_dir_)) {
+        if (!std::filesystem::exists(this->output_dir_) || !std::filesystem::is_directory(this->output_dir_)) {
                 return false;
         }
 
-        auto get_tmp_filename = [&tmpDir](const uint32_t y, const uint32_t z) {
-                return fmt::format("{}/{}/image-{:05d}.tif", tmpDir.string(), z, y);
+        auto get_tmp_filename = [&tmpDir, &ext = this->extension_](const uint32_t y, const uint32_t z) {
+                return fmt::format("{}/{}/image-{:05d}{}", tmpDir.string(), z, y, ext.string());
         };
 
         const uint32_t step = uint32_t(this->num_);

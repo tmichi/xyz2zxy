@@ -31,6 +31,7 @@ private:
         std::vector<std::filesystem::path> image_paths_;
         std::filesystem::path output_dir_;
         int num_;
+        std::filesystem::path extension_;
 public:
         explicit Xyz2ZxyProgram(const mi::Argument &arg);
         ~Xyz2ZxyProgram() override;

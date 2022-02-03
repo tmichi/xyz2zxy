@@ -17,15 +17,20 @@ namespace mi {
         class ProgramTemplate {
         private:
                 std::string cmdStr_;
+                std::string version_;
                 std::unique_ptr<AttributeSet> attr_;
                 bool isDebugModeOn_;
                 bool result_code_;
         public:
                 ProgramTemplate() = delete;
 
-                explicit ProgramTemplate(const mi::Argument &arg, [[maybe_unused]] const std::string &cmdStr = "a.out")
-                        : cmdStr_(arg.get<std::string>(0)), attr_(new AttributeSet()),
-                          isDebugModeOn_(arg.exist("--debug")), result_code_(arg.exist("--help")) {}
+                explicit ProgramTemplate(const mi::Argument &arg, [[maybe_unused]] const std::string &cmdStr = "a.out", const std::string version="1.0.0")
+                        : cmdStr_(arg.get<std::string>(0)), version_(version), attr_(new AttributeSet()),
+                          isDebugModeOn_(arg.exist("--debug")), result_code_(arg.exist("--version")) {
+                        if (arg.exist("--version")) {
+                                throw std::runtime_error(this->cmdStr_+" "+this->version_);
+                        }
+                }
 
                 ProgramTemplate(const ProgramTemplate &) = delete;
 
@@ -44,12 +49,6 @@ namespace mi {
                         try {
                                 const mi::Argument arg(argc, argv);
                                 T program(arg);
-                                if (arg.exist("--help")) {
-                                        std::cerr << "Usage: " << program.cmdStr_ << " [OPTIONS]" << std::endl
-                                                  << std::endl << "OPTIONS:" << std::endl;
-                                        program.attr_->printUsage();
-                                        return 0;
-                                }
                                 if (program.isDebugMode()) {
                                         std::cerr << "Debug mode." << std::endl;
                                 }

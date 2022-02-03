@@ -1,21 +1,23 @@
 # xyz2zxy
 
-Convert XY-cross sectional images to ZX-cross sectional images.
+Convert XY cross-sectional images to ZX cross-sectional images.
 
 ![Teaser image of xyz2zxy](xyz2zxy_teaser.png "Example of the result.")
 
 
 ## Overview
 * This program converts 3D images defined by XY corss-sectional images to different cross-sectional images (ZX).
-* Such images are easy to convert by reading all images at once, however it requires huge memory size. 
+* Such images are easy to convert by reading all images at once, however it requires huge memory usage. 
 * This program reduces memory usage by  divide-and-conquer approach (or using HDD for temporary data).
 * This can be used for observation of very large serial-sectioning images in a different axis-aligned cross-section.
 
 ## Requirements
-* CMake 
+* CMake (> v.3.*.*)
 * C++17 or later (filesystem)
-* OpenCV ( >3.0.0. )
+* OpenCV (> v.4.5.0)
 * fmt (https://fmt.dev) (v.8.0.1 or later)
+
+Lower version may work fine. 
 ## Build and Test 
 ### Unix-like System with CMake 
 ```bash
@@ -25,7 +27,17 @@ Convert XY-cross sectional images to ZX-cross sectional images.
 % make  
 %
 ```
-* ``make check`` creates sasmple data and validates the result. 
+### Validation
+```bash
+% ./make_sample 
+% ./xyz2zxy -i sample -o output -n 4
+Step1 divide:[********************] (256/256)
+Step2 concat:[********************] (256/256)
+% ./validate output
+validation ok
+%
+```
+* ``make check`` creates sasmple data and validates the computation result. 
 ### Windows (Visual Studio )
 * Use CMake to create the solution file.
 * Set CMAKE_PREFIX_PATH to OpenCV and fmt in order to call find_package().
@@ -39,7 +51,7 @@ Convert XY-cross sectional images to ZX-cross sectional images.
 *  ``make_sample, validate`` : executables for validation.
 ## License 
 * MIT License
-## Developper
+## Authors
 * Takashi Michikawa <ram-axed-0b@icloud.com>, Image Processing Research Team, RIKEN Center for Advanced Photonics.
 ## Copyrights 
 * Main codes : (c)2021 - now RIKEN
