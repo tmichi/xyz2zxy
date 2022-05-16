@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
-PROJECT(xyz2zxy VERSION 1.0.1 LANGUAGES CXX)
+PROJECT(xyz2zxy VERSION 1.1.0 LANGUAGES CXX)
 #SET(CMAKE_VERBOSE_MAKEFILE 1)
 #SET(CMAKE_INSTALL_PREFIX "./ex")
 # BUILD mode
@@ -51,9 +51,18 @@ ADD_EXECUTABLE(make_sample make_sample.cpp)
 TARGET_INCLUDE_DIRECTORIES(make_sample PRIVATE ${OpenCV_INCLUDE_DIRS} .)
 TARGET_LINK_LIBRARIES(make_sample PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
 
+
+ADD_EXECUTABLE(make_sample16 make_sample16.cpp)
+TARGET_INCLUDE_DIRECTORIES(make_sample16 PRIVATE ${OpenCV_INCLUDE_DIRS} .)
+TARGET_LINK_LIBRARIES(make_sample16 PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
+
 ADD_EXECUTABLE(validate validate.cpp)
 TARGET_INCLUDE_DIRECTORIES(validate PRIVATE ${OpenCV_INCLUDE_DIRS} .)
 TARGET_LINK_LIBRARIES(validate PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
+
+ADD_EXECUTABLE(validate16 validate16.cpp)
+TARGET_INCLUDE_DIRECTORIES(validate16 PRIVATE ${OpenCV_INCLUDE_DIRS} .)
+TARGET_LINK_LIBRARIES(validate16 PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
 
 install(TARGETS xyz2zxy
         CONFIGURATIONS Release
@@ -66,5 +75,8 @@ ADD_CUSTOM_TARGET(check
         COMMAND make_sample
         COMMAND xyz2zxy -i sample -o output -n 4
         COMMAND validate output
-        DEPENDS make_sample xyz2zxy validate
+        COMMAND make_sample16
+        COMMAND xyz2zxy -i sample16 -o output16 -n 4
+        COMMAND validate output16
+        DEPENDS make_sample xyz2zxy validate make_sample16 validate16
         )
