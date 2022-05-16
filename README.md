@@ -44,9 +44,9 @@ validation ok
 ### Other systems. 
 * See CMakeLists.txt
 ## Usage
-* ``xyz2zxy {input_dir} {output_dir} -n {n}``
-  * ``input_dir`` : the directory where images are contained.
-  * ``output_dir`` : the directory where converted images are saved.
+* ``xyz2zxy -i {input_dir} -o {output_dir} -n {n}``
+  * ``{input_dir}`` : the directory where images are contained.
+  * ``{output_dir}`` : the directory where converted images are saved.
   * ``n`` : the number of images that are loaded in the memory (Default : 100). Larger n computes faster, but requires large memory size.
 *  ``make_sample, validate`` : executables for validation.
 ## License 
