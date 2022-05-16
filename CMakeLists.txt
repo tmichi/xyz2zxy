@@ -51,6 +51,11 @@ ADD_EXECUTABLE(make_sample make_sample.cpp)
 TARGET_INCLUDE_DIRECTORIES(make_sample PRIVATE ${OpenCV_INCLUDE_DIRS} .)
 TARGET_LINK_LIBRARIES(make_sample PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
 
+
+ADD_EXECUTABLE(make_sample16 make_sample16.cpp)
+TARGET_INCLUDE_DIRECTORIES(make_sample16 PRIVATE ${OpenCV_INCLUDE_DIRS} .)
+TARGET_LINK_LIBRARIES(make_sample16 PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
+
 ADD_EXECUTABLE(validate validate.cpp)
 TARGET_INCLUDE_DIRECTORIES(validate PRIVATE ${OpenCV_INCLUDE_DIRS} .)
 TARGET_LINK_LIBRARIES(validate PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)

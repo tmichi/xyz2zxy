@@ -25,6 +25,7 @@
 #include <mi/ProgramTemplate.hpp>
 #include <vector>
 #include <filesystem>
+#include <opencv2/opencv.hpp>
 
 class Xyz2ZxyProgram : public mi::ProgramTemplate {
 private:
@@ -36,6 +37,7 @@ public:
         explicit Xyz2ZxyProgram(const mi::Argument &arg);
         ~Xyz2ZxyProgram() override;
         bool run() override;
+private:
 };
 
 #endif //XYZ2ZXY_XYZ2ZXYPROGRAM_HPP
