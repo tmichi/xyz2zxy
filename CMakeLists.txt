@@ -60,6 +60,10 @@ ADD_EXECUTABLE(validate validate.cpp)
 TARGET_INCLUDE_DIRECTORIES(validate PRIVATE ${OpenCV_INCLUDE_DIRS} .)
 TARGET_LINK_LIBRARIES(validate PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
 
+ADD_EXECUTABLE(validate16 validate16.cpp)
+TARGET_INCLUDE_DIRECTORIES(validate16 PRIVATE ${OpenCV_INCLUDE_DIRS} .)
+TARGET_LINK_LIBRARIES(validate16 PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
+
 install(TARGETS xyz2zxy
         CONFIGURATIONS Release
         RUNTIME DESTINATION bin
@@ -71,5 +75,8 @@ ADD_CUSTOM_TARGET(check
         COMMAND make_sample
         COMMAND xyz2zxy -i sample -o output -n 4
         COMMAND validate output
-        DEPENDS make_sample xyz2zxy validate
+        COMMAND make_sample16
+        COMMAND xyz2zxy -i sample16 -o output16 -n 4
+        COMMAND validate output16
+        DEPENDS make_sample xyz2zxy validate make_sample16 validate16
         )
