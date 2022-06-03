@@ -4,7 +4,6 @@
 
 #include <opencv2/opencv.hpp>
 #include <filesystem>
-#include <fmt/core.h>
 int main () {
         try {
                 std::filesystem::path dir("sample16");
@@ -20,12 +19,17 @@ int main () {
                                 }
                         }
                         std::vector<int> params = {cv::IMWRITE_TIFF_COMPRESSION, 1};
-                        if (!cv::imwrite(fmt::format("{0}/image-{1:05d}.tif", dir.string(), z), image, params)) {
+                        std::stringstream ss;
+                        ss<<dir.string()<<"/image-"<<std::setw(5)<<std::setfill('0')<<z<<".tif";
+                        //if (!cv::imwrite(fmt::format("{0}/image-{1:05d}.tif", dir.string(), z), image, params)) {
+                        if (!cv::imwrite(ss.str(), image, params)) {
                                 throw std::runtime_error("The image cannot be created");
                         }
                 }
         } catch (std::runtime_error& e) {
                 std::cerr<<e.what()<<std::endl;
+        } catch (...) {
+                std::cerr<<"Unknown error."<<std::endl;
         }
         return 0;
 }

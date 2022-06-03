@@ -19,34 +19,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "Xyz2ZxyProgram.hpp"
-#include "Version.hpp"
 #include <iostream>
+#include <iomanip>
+#include <tuple>
 #include <algorithm>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
-//#include <fmt/core.h>
 #include <mi/thread_safe_counter.hpp>
 #include <mi/repeat.hpp>
 #include <mi/progress_bar.hpp>
-
+#include <mi/Argument.hpp>
+#include "Version.hpp"
+std::ostream& operator << (std::ostream& os, std::tuple<double, double>& v) {
+        os << "(" << std::get<0>(v) << ", " << std::get<1>(v) << ")" << std::endl;
+        return os;
+}
 namespace mi {
-        std::ostream& operator << (std::ostream& os, std::tuple<double, double>& v) {
-                os << "(" << std::get<0>(v) << ", " << std::get<1>(v) << ")" << std::endl;
-                return os;
-        }
         template<typename T>
-        inline auto attribute_getter() -> decltype(std::enable_if_t< std::is_same_v<T, std::tuple<double, double>>>(), attribute_getter_t<T>()) {
-                return [](const Argument& arg, const std::string& key, T& value) {
+        inline auto attribute_getter() -> decltype(std::enable_if_t<std::is_same_v<T, std::tuple<double, double> > >(),
+                std::function<bool(const Argument &arg, const std::string &, T &)>()){
+                return [](const Argument& arg, const std::string& key, std::tuple<double, double>& value) {
                         const bool exists = arg.exist(key, 2);
                         if (exists) {
                                 value = std::tuple<double, double>(arg.get<double>(key, 1), arg.get<double>(key, 2));
                         }
                         return exists;
                 };
-
         }
 }
+
+#include "Xyz2ZxyProgram.hpp"
 Xyz2ZxyProgram::Xyz2ZxyProgram(const mi::Argument& arg) : mi::ProgramTemplate(arg, "xyz2zxy", std::string("v.")+ XYZ2ZXY_VERSION), output_dir_("output"), num_(100), extension_(".tif"), pitch_(std::tuple<double, double>(1, 1)) {
         std::filesystem::path input_dir;
         this->getAttributeSet().createAttribute("-i", input_dir).setMessage("Input directory").setMandatory();

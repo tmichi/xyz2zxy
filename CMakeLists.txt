@@ -16,11 +16,9 @@ SET(CMAKE_CXX_EXTENSIONS OFF)
 # Libraries
 IF(MSVC)
     SET(OpenCV_DIR "C:/opencv/build") #directory where OpenCVConfig.cmake exists
-    SET(CMAKE_PREFIX_PATH "C:/fmt-8.1.1")
 ENDIF(MSVC)
 
 find_package(OpenCV 4.5.0 REQUIRED)
-find_package(fmt 8.1.1 REQUIRED)
 find_package(Threads REQUIRED)
 
 if (MSVC) #Visual Studio
@@ -49,20 +47,21 @@ TARGET_LINK_LIBRARIES(xyz2zxy PRIVATE ${OpenCV_LIBS} Threads::Threads)
 
 ADD_EXECUTABLE(make_sample make_sample.cpp)
 TARGET_INCLUDE_DIRECTORIES(make_sample PRIVATE ${OpenCV_INCLUDE_DIRS} .)
-TARGET_LINK_LIBRARIES(make_sample PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
+TARGET_LINK_LIBRARIES(make_sample PRIVATE ${OpenCV_LIBS} Threads::Threads)
 
 
 ADD_EXECUTABLE(make_sample16 make_sample16.cpp)
 TARGET_INCLUDE_DIRECTORIES(make_sample16 PRIVATE ${OpenCV_INCLUDE_DIRS} .)
-TARGET_LINK_LIBRARIES(make_sample16 PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
+TARGET_LINK_LIBRARIES(make_sample16 PRIVATE ${OpenCV_LIBS} Threads::Threads)
 
 ADD_EXECUTABLE(validate validate.cpp)
 TARGET_INCLUDE_DIRECTORIES(validate PRIVATE ${OpenCV_INCLUDE_DIRS} .)
-TARGET_LINK_LIBRARIES(validate PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
+TARGET_LINK_LIBRARIES(validate PRIVATE ${OpenCV_LIBS} Threads::Threads)
 
 ADD_EXECUTABLE(validate16 validate16.cpp)
 TARGET_INCLUDE_DIRECTORIES(validate16 PRIVATE ${OpenCV_INCLUDE_DIRS} .)
-TARGET_LINK_LIBRARIES(validate16 PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
+TARGET_LINK_LIBRARIES(validate16 PRIVATE ${OpenCV_LIBS}
+        Threads::Threads)
 
 install(TARGETS xyz2zxy
         CONFIGURATIONS Release
