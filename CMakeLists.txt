@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
-PROJECT(xyz2zxy VERSION 1.1.0 LANGUAGES CXX)
+PROJECT(xyz2zxy VERSION 1.2.0 LANGUAGES CXX)
 #SET(CMAKE_VERBOSE_MAKEFILE 1)
 #SET(CMAKE_INSTALL_PREFIX "./ex")
 # BUILD mode
@@ -24,7 +24,7 @@ find_package(fmt 8.1.1 REQUIRED)
 find_package(Threads REQUIRED)
 
 if (MSVC) #Visual Studio
-    set(CMAKE_CXX_FLAGS "/W4")
+    set(CMAKE_CXX_FLAGS "/W4 /EHsc")
 elseif (CMAKE_COMPILER_IS_GNUCXX) #UNIX
     set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic")
     set(CMAKE_CXX_FLAGS_DEBUG "-g3 -O0 -pg")
@@ -45,7 +45,7 @@ endif ()
 configure_file(Version.hpp.in Version.hpp)
 ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp Xyz2ZxyProgram.hpp Xyz2ZxyProgram.cpp)
 TARGET_INCLUDE_DIRECTORIES(xyz2zxy PRIVATE ${OpenCV_INCLUDE_DIRS} . ${CMAKE_BINARY_DIR})
-TARGET_LINK_LIBRARIES(xyz2zxy PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
+TARGET_LINK_LIBRARIES(xyz2zxy PRIVATE ${OpenCV_LIBS} Threads::Threads)
 
 ADD_EXECUTABLE(make_sample make_sample.cpp)
 TARGET_INCLUDE_DIRECTORIES(make_sample PRIVATE ${OpenCV_INCLUDE_DIRS} .)
@@ -79,4 +79,8 @@ ADD_CUSTOM_TARGET(check
         COMMAND xyz2zxy -i sample16 -o output16 -n 4
         COMMAND validate output16
         DEPENDS make_sample xyz2zxy validate make_sample16 validate16
+        )
+ADD_CUSTOM_TARGET(check_custom_pitch
+        COMMAND make_sample
+        COMMAND xyz2zxy -i sample -o output_cp -n 4 -pitch 1 3
         )

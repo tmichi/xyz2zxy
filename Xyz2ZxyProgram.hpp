@@ -23,9 +23,9 @@
 #define XYZ2ZXY_XYZ2ZXYPROGRAM_HPP 1
 
 #include <mi/ProgramTemplate.hpp>
+#include <tuple>
 #include <vector>
 #include <filesystem>
-#include <opencv2/opencv.hpp>
 
 class Xyz2ZxyProgram : public mi::ProgramTemplate {
 private:
@@ -33,6 +33,7 @@ private:
         std::filesystem::path output_dir_;
         int num_;
         std::filesystem::path extension_;
+        std::tuple<double, double> pitch_;
 public:
         explicit Xyz2ZxyProgram(const mi::Argument &arg);
         ~Xyz2ZxyProgram() override;
