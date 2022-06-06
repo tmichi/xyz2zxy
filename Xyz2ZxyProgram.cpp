@@ -74,52 +74,41 @@ Xyz2ZxyProgram::Xyz2ZxyProgram(const mi::Argument& arg) : mi::ProgramTemplate(ar
         this->getAttributeSet().printValues(std::cerr);
 }
 
-
 Xyz2ZxyProgram::~Xyz2ZxyProgram() {
-
 }
 
 bool
 Xyz2ZxyProgram::run() {
-        auto write_image = [](const std::string filename, const cv::Mat& image, std::vector<int>& params) {
+        auto get_filename  = [&ext = this->extension_](const std::filesystem::path& p, const uint32_t i) {
+                std::stringstream ss;
+                ss << p.string() <<"/image-" << std::setw(5) << std::setfill('0') <<i<< ext.string();
+                return ss.str();
+        };
+        auto write_image = [&get_filename](const std::filesystem::path& dir, uint32_t i, const cv::Mat& image, std::vector<int>& params) {
                 if (image.depth() <= 2) {
-                        return cv::imwrite(filename, image, params);        
+                        return cv::imwrite(get_filename(dir, i), image, params);
                 } else {
                         std::cerr << "Unsupported depth:" << image.depth() << std::endl;
                         return false;
                 }
         };
-
-        auto& paths = this->image_paths_;
+        auto read_image = [&get_filename](const std::filesystem::path& dir, uint32_t i) {
+                return cv::imread(get_filename(dir,i), cv::IMREAD_UNCHANGED);
+        };
+        auto check_directory = [](const std::filesystem::path& p ){
+                return std::filesystem::exists(p) && std::filesystem::is_directory(p);
+        };
+        
         std::filesystem::path tmpDir = this->output_dir_.string() + "_temp";
+        
         std::filesystem::create_directories(tmpDir);
-        if (!std::filesystem::exists(tmpDir) || !std::filesystem::is_directory(tmpDir)) {
-                return false;
-        }
-
         std::filesystem::create_directories(this->output_dir_);
-        if (!std::filesystem::exists(this->output_dir_) || !std::filesystem::is_directory(this->output_dir_)) {
+        if ( !check_directory(tmpDir) || !check_directory(this->output_dir_)) {
+                std::cerr<<"Creating directory failed"<<std::endl;
                 return false;
         }
-
-
-        auto get_tmp_filename = [&tmpDir, &ext = this->extension_](const uint32_t y, const uint32_t z) {
-                std::stringstream ss;
-                ss << tmpDir.string() << "/" << z << "/image-" << std::setw(5) << std::setfill('0') <<y<< ext.string();
-                return ss.str();
-                //    return fmt::format("{}/{}/image-{:05d}{}", tmpDir.string(), z, y, ext.string());
-        };
-
-        auto get_output_filename = [&outDir = this->output_dir_, &ext = this->extension_](const uint32_t y) {
-                std::stringstream ss;
-                ss << outDir.string() << "/image-" << std::setw(5) << std::setfill('0') <<y<< ext.string();
-                return ss.str();
-                //   return fmt::format("{}/image-{:05d}.tif", outDir.string(), y);
-        };
 
         const uint32_t step = uint32_t(this->num_);
-
-
         std::tuple<double, double> dpi;
         // dpi =  25.4 mm / (pitch mm/pixel) (inch)
         std::get<0>(dpi) = std::round(25400 / std::get<0>(this->pitch_));
@@ -127,12 +116,12 @@ Xyz2ZxyProgram::run() {
 
         std::cerr << "dpi " << std::get<0>(dpi) << " " << std::get<1>(dpi) << std::endl;
         // get volume size
-        cv::Mat image = cv::imread(paths[0].string(), cv::IMREAD_UNCHANGED);
+        cv::Mat image = cv::imread(this->image_paths_[0].string(), cv::IMREAD_UNCHANGED);
         const uint32_t sx = uint32_t(image.size().width);
         const uint32_t sy = uint32_t(image.size().height);
+        const uint32_t sz = uint32_t(this->image_paths_.size());
         std::cerr << "image size: " << image.size() << std::endl;
         image.release();
-        const uint32_t sz = uint32_t(paths.size());
 
         std::string step1Str{ "Step1 divide" };
         mi::progress_bar(0u, sz, step1Str);
@@ -140,33 +129,32 @@ Xyz2ZxyProgram::run() {
         for (uint32_t z = 0; z < sz; z += step) {
                 std::vector<cv::Mat> images;
                 const uint32_t end = (z + step < sz) ? z + step : sz;
-                std::transform(paths.begin() + z, paths.begin() + end, std::back_inserter(images), [](auto& f) {return cv::imread(f.string(), cv::IMREAD_UNCHANGED); });
+                std::transform(this->image_paths_.begin() + z, this->image_paths_.begin() + end, std::back_inserter(images), [](auto& f) {return cv::imread(f.string(), cv::IMREAD_UNCHANGED); });
                 std::filesystem::create_directory(tmpDir / std::to_string(z));
-                mi::repeat_mt([&counter, &images, &sx, &sy, &z, &get_tmp_filename, &write_image]() {
+                mi::repeat_mt([&counter, &images, &sx, &sy, &z, &write_image, &tmpDir]() {
                         for (uint32_t y = counter.get(); y < sy; y = counter.get()) {
                                 std::vector<cv::Mat> local_images;
                                 std::transform(images.begin(), images.end(), std::back_inserter(local_images), [&y, &sx](auto& image) {return cv::Mat(image, cv::Rect(cv::Point(0, int(y)), cv::Size(int(sx), 1))); }); // cut
                                 cv::Mat local;
                                 cv::vconcat(local_images, local);
                                 std::vector<int> params = { cv::IMWRITE_TIFF_COMPRESSION, 1 };
-                                write_image(get_tmp_filename(y, z), local, params);
-                        
+                                write_image(tmpDir / std::to_string(z), y, local, params);
                         }
                         });
                 mi::progress_bar(z + uint32_t(images.size()), sz, step1Str);
                 counter.reset(0);
         }
         std::cerr << std::endl;
-        mi::thread_safe_counter<uint32_t> num_of_finished;
-        mi::progress_bar<uint32_t>(num_of_finished.get(), sy, "Step2 concat");
-        std::mutex mtx;
 
+        mi::thread_safe_counter<uint32_t> num_of_finished;
+        std::mutex mtx;
+        mi::progress_bar<uint32_t>(num_of_finished.get(), sy, "Step2 concat");
         mi::repeat_mt(
-                [&num_of_finished, &mtx, &counter, &get_tmp_filename, &sy, &step, &sz, &write_image, &dpi, &get_output_filename]() {
+                [&num_of_finished, &mtx, &counter, &sy, &step, &sz, &write_image, &read_image, &dpi, &tmpDir, &outDir = this->output_dir_]() {
                 for (uint32_t y = counter.get(); y < sy; y = counter.get()) {
                         std::vector<cv::Mat> local_images;
                         for (uint32_t z = 0; z < sz; z += step) {
-                                local_images.push_back(cv::imread(get_tmp_filename(y, z), cv::IMREAD_ANYDEPTH | cv::IMREAD_ANYCOLOR));
+                                local_images.push_back(read_image(tmpDir / std::to_string(z), y));
                         }
                         cv::Mat result;
                         cv::vconcat(local_images, result);
@@ -176,7 +164,7 @@ Xyz2ZxyProgram::run() {
                             cv::IMWRITE_TIFF_YDPI, int(std::get<1>(dpi)),
                             cv::IMWRITE_TIFF_COMPRESSION, 1 //NO COMPSSION
                         };
-                        write_image(get_output_filename(y), result, params);
+                        write_image( outDir, y, result, params);
                         mi::progress_bar(mtx, num_of_finished.get(), sy, "Step2 concat");
                 }
         });

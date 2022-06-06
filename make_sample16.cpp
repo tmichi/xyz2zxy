@@ -4,8 +4,8 @@
 #include <iostream>
 #include <iomanip>
 #include <filesystem>
-#include <opencv2/highgui.hpp>
 #include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
 int main () {
         try {
                 std::filesystem::path dir("sample16");
