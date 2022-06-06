@@ -15,7 +15,7 @@ Convert XY cross-sectional images to ZX cross-sectional images.
 * CMake (> v.3.*.*)
 * C++17 or later (filesystem)
 * OpenCV (> v.4.5.0)
-* fmt (https://fmt.dev) (v.8.0.1 or later)
+* ~~fmt (https://fmt.dev) (v.8.0.1 or later)~~ 
 
 Lower version may work fine. 
 ## Build and Test 
@@ -44,9 +44,10 @@ validation ok
 ### Other systems. 
 * See CMakeLists.txt
 ## Usage
-* ``xyz2zxy -i {input_dir} -o {output_dir} -n {n}``
+* ``xyz2zxy -i {input_dir} -o {output_dir} -n {n} -pitch {px} {pz}``
   * ``{input_dir}`` : the directory where images are contained.
   * ``{output_dir}`` : the directory where converted images are saved.
+  * ``{px} {pz}`` : Custom pitch size 
   * ``n`` : the number of images that are loaded in the memory (Default : 100). Larger n computes faster, but requires large memory size.
 *  ``make_sample, validate`` : executables for validation.
 ## License 
