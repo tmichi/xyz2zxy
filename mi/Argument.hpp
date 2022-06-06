@@ -33,7 +33,7 @@ namespace mi {
                 inline size_t size() const {
                         return this->argv_.size();
                 }
-
+        
                 [[nodiscard]]
                 inline bool exist(const std::string &key, const size_t offset = 0) const {
                         return this->index(key) + offset < this->size();
@@ -43,16 +43,24 @@ namespace mi {
                 inline T get(const std::string &key, const size_t offset = 1) const {
                         return this->get<T>(this->index(key) + offset);
                 }
-
+        
+                
                 template<typename T>
+                [[nodiscard]]
                 inline T get(const size_t idx) const {
-                        try {
-                                return mi::sto<T>(this->argv_.at(idx));
-                        } catch (const std::invalid_argument &e) {
-                                std::cerr << "invalid argument in Argument::get()" << std::endl;
-                        } catch (const std::out_of_range &e) {
-                                std::cerr << "out of range in Argument::get() " << std::endl;
-                        }
+                    try {
+                        return mi::sto<T>(this->argv_.at(idx));
+                    }
+                    catch (const std::invalid_argument& e) {
+                        std::cerr << "invalid argument in Argument::get() " << e.what() << std::endl;
+                    }
+                    catch (const std::out_of_range& e) {
+                        std::cerr << "out of range in Argument::get() " << e.what() << std::endl;
+                    }
+                    catch (...) {
+                        std::cerr << "Unknown error." << std::endl;
+                    }
+             
                         return T();
                 }
 

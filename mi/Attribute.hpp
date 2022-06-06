@@ -45,7 +45,6 @@ namespace mi {
                         };
                 }
         }
-
 #ifdef EIGEN_MATRIX_H
         template<typename T>
         using is_eigen_t = typename std::enable_if<std::is_same_v<Eigen::Matrix<typename T::Scalar, T::RowsAtCompileTime, T::ColsAtCompileTime>, T>>::type;

@@ -25,12 +25,13 @@
 #include <filesystem>
 #include <iostream>
 #include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
-#include <fmt/core.h>
+#include <opencv2/imgcodecs.hpp>
 int main () {
         try {
                 for (int y = 0 ; y < 256 ; ++y) {
-                        const auto file = fmt::format("{0}/image-{1:05d}.tif", "output16", y);
+                        std::stringstream ss;
+                        ss<<"output16/image-"<<std::setw(5)<<std::setfill('0')<<y<<".tif";
+                        const auto file = ss.str();
                         if ( cv::Mat image = cv::imread(file, cv::IMREAD_UNCHANGED) ; image.empty() ) {
                                 throw std::runtime_error(file + " was empty.");
                         } else if (image.size().width != 256 || image.size().height != 256) {

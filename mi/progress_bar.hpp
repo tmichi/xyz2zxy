@@ -13,21 +13,24 @@
 #include <string>
 #include <type_traits>
 #include <iostream>
-#include <fmt/core.h>
+//#include <fmt/core.h>
+
 #if defined (WIN32) || defined (_WIN64)
 #include <windows.h>
+#include <io.h>
 #endif
 namespace mi{
         template <typename T>
-        inline auto progress_bar(const T v, const T vmax, const std::string header = "progress", const int ndots = 20) -> decltype(std::enable_if_t<std::is_arithmetic_v<T>, T>(), void()){
-                #if defined (WIN32) || defined (_WIN64)
-                DWORD mode = 0;
-                if (HANDLE handle = (HANDLE)_get_osfhandle(_fileno(stderr));!GetConsoleMode(handle, &mode) ){
-                }
-                else if(!SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
-                }
-                #endif
-                std::cerr<<fmt::format("\033[G{0}:[{1:-<{2}}] ({4:{3}d}/{5})", header, std::string(uint32_t(v * T(ndots) / vmax), '*'), ndots, int(std::log10(vmax))+1, v, vmax);
+        inline auto progress_bar(const T v, const T vmax, const std::string header = "progress", const int ndots = 20) -> decltype(std::enable_if_t<std::is_arithmetic_v<T>, T>(), void()) {
+#if defined (WIN32) || defined (_WIN64)
+            DWORD mode = 0;
+            if (HANDLE handle = (HANDLE)_get_osfhandle(_fileno(stderr)); !GetConsoleMode(handle, &mode)) {
+            }
+            else if (!SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+            }
+            #endif
+            //std::cerr << fmt::format("\033[G{0}:[{1:-<{2}}] ({4:{3}d}/{5})", header, std::string(uint32_t(v * T(ndots) / vmax), '*'), ndots, int(std::log10(vmax)) + 1, v, vmax);
+            std::cerr << "\033[G" << header << ":[" << std::left<<std::setw(ndots) << std::string(uint32_t(v * T(ndots) / vmax), '*') << "] (" << v << "/" << vmax << ")"<<std::flush;      
         }
 
         // thread safe version

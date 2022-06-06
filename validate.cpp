@@ -22,13 +22,15 @@
 */
 #include <filesystem>
 #include <iostream>
+#include <iomanip>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
-#include <fmt/core.h>
 int main () {
         try {
                 for (int y = 0 ; y < 256 ; ++y) {
-                        const auto file = fmt::format("{0}/image-{1:05d}.tif", "output", y);
+                        std::stringstream ss;
+                        ss<<"output/image-"<<std::setw(5)<<std::setfill('0')<<y<<".tif";
+                        const auto file = ss.str();
                         if ( cv::Mat image = cv::imread(file) ; image.empty() ) {
                                 throw std::runtime_error(file + " was empty.");
                         } else if (image.size().width != 256 || image.size().height != 256) {

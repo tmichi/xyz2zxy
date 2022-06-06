@@ -1,7 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
-PROJECT(xyz2zxy VERSION 1.1.0 LANGUAGES CXX)
-#SET(CMAKE_VERBOSE_MAKEFILE 1)
-#SET(CMAKE_INSTALL_PREFIX "./ex")
+PROJECT(xyz2zxy VERSION 1.2.0 LANGUAGES CXX)
 # BUILD mode
 #SET(CMAKE_BUILD_TYPE Debug)
 SET(CMAKE_BUILD_TYPE Release)
@@ -16,15 +14,11 @@ SET(CMAKE_CXX_EXTENSIONS OFF)
 # Libraries
 IF(MSVC)
     SET(OpenCV_DIR "C:/opencv/build") #directory where OpenCVConfig.cmake exists
-    SET(CMAKE_PREFIX_PATH "C:/fmt-8.1.1")
 ENDIF(MSVC)
-
 find_package(OpenCV 4.5.0 REQUIRED)
-find_package(fmt 8.1.1 REQUIRED)
 find_package(Threads REQUIRED)
-
 if (MSVC) #Visual Studio
-    set(CMAKE_CXX_FLAGS "/W4")
+    set(CMAKE_CXX_FLAGS "/W4 /EHsc")
 elseif (CMAKE_COMPILER_IS_GNUCXX) #UNIX
     set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic")
     set(CMAKE_CXX_FLAGS_DEBUG "-g3 -O0 -pg")
@@ -42,27 +36,17 @@ endif ()
 ##
 ## Executables.
 ##
+INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS} .)
+LINK_LIBRARIES(${OpenCV_LIBS} Threads::Threads)
+
 configure_file(Version.hpp.in Version.hpp)
 ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp Xyz2ZxyProgram.hpp Xyz2ZxyProgram.cpp)
-TARGET_INCLUDE_DIRECTORIES(xyz2zxy PRIVATE ${OpenCV_INCLUDE_DIRS} . ${CMAKE_BINARY_DIR})
-TARGET_LINK_LIBRARIES(xyz2zxy PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
+TARGET_INCLUDE_DIRECTORIES(xyz2zxy PRIVATE ${CMAKE_BINARY_DIR})
 
 ADD_EXECUTABLE(make_sample make_sample.cpp)
-TARGET_INCLUDE_DIRECTORIES(make_sample PRIVATE ${OpenCV_INCLUDE_DIRS} .)
-TARGET_LINK_LIBRARIES(make_sample PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
-
-
 ADD_EXECUTABLE(make_sample16 make_sample16.cpp)
-TARGET_INCLUDE_DIRECTORIES(make_sample16 PRIVATE ${OpenCV_INCLUDE_DIRS} .)
-TARGET_LINK_LIBRARIES(make_sample16 PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
-
 ADD_EXECUTABLE(validate validate.cpp)
-TARGET_INCLUDE_DIRECTORIES(validate PRIVATE ${OpenCV_INCLUDE_DIRS} .)
-TARGET_LINK_LIBRARIES(validate PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
-
 ADD_EXECUTABLE(validate16 validate16.cpp)
-TARGET_INCLUDE_DIRECTORIES(validate16 PRIVATE ${OpenCV_INCLUDE_DIRS} .)
-TARGET_LINK_LIBRARIES(validate16 PRIVATE ${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
 
 install(TARGETS xyz2zxy
         CONFIGURATIONS Release
@@ -72,11 +56,21 @@ install(TARGETS xyz2zxy
 ## Validation script
 ##
 ADD_CUSTOM_TARGET(check
+        DEPENDS check8 check16 check_custom_pitch
+        )
+ADD_CUSTOM_TARGET(check8
         COMMAND make_sample
         COMMAND xyz2zxy -i sample -o output -n 4
         COMMAND validate output
+        DEPENDS make_sample xyz2zxy validate
+        )
+ADD_CUSTOM_TARGET(check16
         COMMAND make_sample16
         COMMAND xyz2zxy -i sample16 -o output16 -n 4
         COMMAND validate output16
-        DEPENDS make_sample xyz2zxy validate make_sample16 validate16
+        DEPENDS xyz2zxy make_sample16 validate16
+        )
+ADD_CUSTOM_TARGET(check_custom_pitch
+        COMMAND make_sample
+        COMMAND xyz2zxy -i sample -o output_cp -n 4 -pitch 1 3
         )

@@ -19,9 +19,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
 */
-#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <iomanip>
 #include <filesystem>
-#include <fmt/core.h>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/core.hpp>
+#include <sstream>
 int main () {
         try {
                 std::filesystem::path dir("sample");
@@ -36,12 +39,16 @@ int main () {
                                         image.at<cv::Vec3b>(y, x) = cv::Vec3b(uint8_t(z), uint8_t(y), uint8_t(x));
                                 }
                         }
-                        if (!cv::imwrite(fmt::format("{0}/image-{1:05d}.tif", dir.string(), z), image)) {
+                        std::stringstream ss;
+                        ss<<dir.string()<<"/image-"<<std::setw(5)<<std::setfill('0')<<z<<".tif";
+                        if (!cv::imwrite(ss.str(), image)) {
                                 throw std::runtime_error("The image cannot be created");
                         }
                 }
         } catch (std::runtime_error& e) {
                 std::cerr<<e.what()<<std::endl;
+        } catch (...) {
+                std::cerr<<"Unknown error."<<std::endl;
         }
         return 0;
 }

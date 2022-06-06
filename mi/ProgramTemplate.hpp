@@ -45,19 +45,24 @@ namespace mi {
 
                 template<typename T>
                 static auto execute(const int argc,
-                                    const char **argv) -> decltype(typename std::enable_if<std::is_base_of<ProgramTemplate, T>::value>::type(), int()) {
-                        try {
-                                const mi::Argument arg(argc, argv);
-                                T program(arg);
-                                if (program.isDebugMode()) {
-                                        std::cerr << "Debug mode." << std::endl;
-                                }
-                                if (!program.run()) {
-                                        std::cerr << " Computation failed" << std::endl;
-                                }
-                        } catch (std::exception &e) {
-                                std::cerr << e.what() << std::endl;
+                    const char** argv) -> decltype(typename std::enable_if<std::is_base_of<ProgramTemplate, T>::value>::type(), int()) {
+                    try {
+                        const mi::Argument arg(argc, argv);
+                        T program(arg);
+                        if (program.isDebugMode()) {
+                            std::cerr << "Debug mode." << std::endl;
                         }
+                        if (!program.run()) {
+                            std::cerr << " Computation failed" << std::endl;
+                        }
+                    }
+                    catch (std::exception& e) {
+                        std::cerr << e.what() << std::endl;
+                    }
+                    catch (...){
+                        std::cerr << "Unknown error detected." << std::endl;
+                    }
+                
                         return 0;
                 }
 
