@@ -1,9 +1,11 @@
 //
 // Created by Takashi Michikawa on 2022/05/16.
 //
-
-#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <iomanip>
 #include <filesystem>
+#include <opencv2/highgui.hpp>
+#include <opencv2/core.hpp>
 int main () {
         try {
                 std::filesystem::path dir("sample16");
@@ -15,7 +17,7 @@ int main () {
                 for (int z = 0 ; z < 256 ; ++z) {
                         for (int y = 0 ; y < 256 ; ++y) {
                                 for (int x = 0 ; x < 256; ++x) {
-                                        image.at<cv::Vec3w>(y, x) = cv::Vec3w(z * 256, y * 256, x* 256);
+                                        image.at<cv::Vec3w>(y, x) = cv::Vec3w(uint16_t(z * 256), uint16_t(y * 256), uint16_t(x* 256));
                                 }
                         }
                         std::vector<int> params = {cv::IMWRITE_TIFF_COMPRESSION, 1};

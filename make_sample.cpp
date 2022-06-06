@@ -19,8 +19,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
 */
-#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <iomanip>
 #include <filesystem>
+#include <opencv2/highgui.hpp>
+#include <opencv2/core.hpp>
 #include <sstream>
 int main () {
         try {

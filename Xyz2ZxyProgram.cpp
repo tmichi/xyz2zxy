@@ -30,20 +30,23 @@
 #include <mi/progress_bar.hpp>
 #include <mi/Argument.hpp>
 #include "Version.hpp"
+
 std::ostream& operator << (std::ostream& os, std::tuple<double, double>& v) {
         os << "(" << std::get<0>(v) << ", " << std::get<1>(v) << ")" << std::endl;
         return os;
 }
+
 namespace mi {
         template<typename T>
         inline auto attribute_getter() -> decltype(std::enable_if_t<std::is_same_v<T, std::tuple<double, double> > >(),
                 std::function<bool(const Argument &arg, const std::string &, T &)>()){
                 return [](const Argument& arg, const std::string& key, std::tuple<double, double>& value) {
-                        const bool exists = arg.exist(key, 2);
-                        if (exists) {
+                        if (arg.exist(key, 2)) {
                                 value = std::tuple<double, double>(arg.get<double>(key, 1), arg.get<double>(key, 2));
+                                return true;
+                        } else {
+                                return false;
                         }
-                        return exists;
                 };
         }
 }
@@ -55,7 +58,7 @@ Xyz2ZxyProgram::Xyz2ZxyProgram(const mi::Argument& arg) : mi::ProgramTemplate(ar
         this->getAttributeSet().createAttribute("-o", this->output_dir_).setMessage("Output directory (default : output/)");
         this->getAttributeSet().createAttribute("-n", this->num_).setMessage("The number of steps (Default: 100, Larger n is probably fast but it causes large memory consumption.)").setValidator(mi::attr::greater(0));
         this->getAttributeSet().createAttribute("-ext", this->extension_).setMessage("Extension of the images (e.g., .tif, .png. Default : .tif)");
-        this->getAttributeSet().createAttribute("-pitch", this->pitch_).setMessage("Custom voxel pitch (z, x)").setValidator([](const std::tuple<double, double>& p) {return std::get<0>(p) > 0 && std::get<1>(p) > 0; }, true);
+        this->getAttributeSet().createAttribute("-pitch", this->pitch_).setMessage("Custom voxel pitch (x, y)").setValidator([](const std::tuple<double, double>& p) {return std::get<0>(p) > 0 && std::get<1>(p) > 0; }, true);
         if (!this->getAttributeSet().parse(arg)) {
                 std::cerr << "Usage :" << std::endl;
                 this->getAttributeSet().printUsage();
@@ -80,13 +83,11 @@ bool
 Xyz2ZxyProgram::run() {
         auto write_image = [](const std::string filename, const cv::Mat& image, std::vector<int>& params) {
                 if (image.depth() <= 2) {
-                        cv::imwrite(filename, image, params);
-                }
-                else {
+                        return cv::imwrite(filename, image, params);        
+                } else {
                         std::cerr << "Unsupported depth:" << image.depth() << std::endl;
                         return false;
                 }
-                return true;
         };
 
         auto& paths = this->image_paths_;
