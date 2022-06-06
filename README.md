@@ -47,7 +47,7 @@ validation ok
 * ``xyz2zxy -i {input_dir} -o {output_dir} -n {n} -pitch {px} {pz}``
   * ``{input_dir}`` : the directory where images are contained.
   * ``{output_dir}`` : the directory where converted images are saved.
-  * ``{px} {pz}`` : Custom pitch size 
+  * ``{px} {pz}`` : Custom pitch size (only for .tif files)
   * ``n`` : the number of images that are loaded in the memory (Default : 100). Larger n computes faster, but requires large memory size.
 *  ``make_sample, validate`` : executables for validation.
 ## License 
