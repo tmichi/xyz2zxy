@@ -53,7 +53,7 @@ namespace mi {
 }
 
 #include "Xyz2ZxyProgram.hpp"
-Xyz2ZxyProgram::Xyz2ZxyProgram(const mi::Argument& arg) : mi::ProgramTemplate(arg, "xyz2zxy", std::string("v.")+ XYZ2ZXY_VERSION), output_dir_("output"), num_(100), extension_(".tif"), pitch_(std::tuple<double, double>(1, 1)) {
+Xyz2ZxyProgram::Xyz2ZxyProgram(const mi::Argument& arg) : mi::ProgramTemplate(arg, "xyz2zxy", std::string("v.")+ XYZ2ZXY_VERSION), output_dir_("output"), tmp_dir_("output_tmp"), num_(100), extension_(".tif"), pitch_(std::tuple<double, double>(1, 1)) {
         std::filesystem::path input_dir;
         this->getAttributeSet().createAttribute("-i", input_dir).setMessage("Input directory").setMandatory();
         this->getAttributeSet().createAttribute("-o", this->output_dir_).setMessage("Output directory (default : output/)");
@@ -72,10 +72,24 @@ Xyz2ZxyProgram::Xyz2ZxyProgram(const mi::Argument& arg) : mi::ProgramTemplate(ar
                 throw std::runtime_error("Empty images");
         }
         std::sort(this->image_paths_.begin(), this->image_paths_.end());
-        this->getAttributeSet().printValues(std::cerr);
+        
+        //this->getAttributeSet().printValues(std::cerr);
+        
+        this->tmp_dir_ = this->output_dir_.string() + "_temp";
+        std::filesystem::create_directories(this->tmp_dir_);
+        std::filesystem::create_directories(this->output_dir_);
+
+auto check_directory = [](const std::filesystem::path& p ){
+        return std::filesystem::exists(p) && std::filesystem::is_directory(p);
+};
+if ( !check_directory(this->tmp_dir_) || !check_directory(this->output_dir_)) {
+                throw std::runtime_error("Creating directories failed.");
+        }
+        
 }
 
 Xyz2ZxyProgram::~Xyz2ZxyProgram() {
+        std::filesystem::remove_all(this->tmp_dir_);
 }
 
 bool
@@ -89,17 +103,6 @@ Xyz2ZxyProgram::run() {
         auto read_image = [&get_filename](const std::filesystem::path& dir, uint32_t i) {
                 return cv::imread(get_filename(dir,i), cv::IMREAD_UNCHANGED);
         };
-        auto check_directory = [](const std::filesystem::path& p ){
-                return std::filesystem::exists(p) && std::filesystem::is_directory(p);
-        };
-        
-        std::filesystem::path tmpDir = this->output_dir_.string() + "_temp";
-        std::filesystem::create_directories(tmpDir);
-        std::filesystem::create_directories(this->output_dir_);
-        if ( !check_directory(tmpDir) || !check_directory(this->output_dir_)) {
-                std::cerr<<"Creating directory failed"<<std::endl;
-                return false;
-        }
 
         const uint32_t step = uint32_t(this->num_);
         std::tuple<double, double> dpi;
@@ -112,7 +115,7 @@ Xyz2ZxyProgram::run() {
                 cv::IMWRITE_TIFF_COMPRESSION, 1 //NO COMPRESSION
         };
         auto write_image = [&params, &get_filename](const std::filesystem::path& dir, uint32_t i, const cv::Mat& image) {
-                if (image.depth() <= 2) {
+                if (image.depth() == CV_8U || image.depth() == CV_16U) {
                         return cv::imwrite(get_filename(dir, i), image, params);
                 } else {
                         std::cerr << "Unsupported depth:" << image.depth() << std::endl;
@@ -123,10 +126,8 @@ Xyz2ZxyProgram::run() {
         
         // get volume size
         cv::Mat image = cv::imread(this->image_paths_[0].string());
-        const uint32_t sx = uint32_t(image.size().width);
         const uint32_t sy = uint32_t(image.size().height);
         const uint32_t sz = uint32_t(this->image_paths_.size());
-        std::cerr << "image size: " << image.size() << std::endl;
         image.release();
         
         std::string step1Str{ "Step1 divide" };
@@ -134,16 +135,19 @@ Xyz2ZxyProgram::run() {
         mi::thread_safe_counter<uint32_t> counter;
         for (uint32_t z = 0; z < sz; z += step) {
                 std::vector<cv::Mat> images;
-                const uint32_t end = (z + step < sz) ? z + step : sz;
+                const uint32_t end = std::min(z + step , sz);
                 std::transform(this->image_paths_.begin() + z, this->image_paths_.begin() + end, std::back_inserter(images), [](auto& f) {return cv::imread(f.string(), cv::IMREAD_UNCHANGED); });
-                std::filesystem::create_directory(tmpDir / std::to_string(z));
-                mi::repeat_mt([&counter, &images, &sx, &sy, &z, &write_image, &tmpDir]() {
+                auto tmp_dir_local = this->tmp_dir_ / std::to_string(z);
+                std::filesystem::create_directory(tmp_dir_local);
+
+                mi::repeat_mt([&counter, &images, &write_image, &tmp_dir_local]() {
+                        const uint32_t sy = uint32_t(images[0].size().height);
                         for (uint32_t y = counter.get(); y < sy; y = counter.get()) {
                                 std::vector<cv::Mat> local_images;
-                                std::transform(images.begin(), images.end(), std::back_inserter(local_images), [&y, &sx](auto& image) {return cv::Mat(image, cv::Rect(cv::Point(0, int(y)), cv::Size(int(sx), 1))); }); // cut
+                                std::transform(images.begin(), images.end(), std::back_inserter(local_images), [&y](auto& image) {return cv::Mat(image, cv::Rect(cv::Point(0, int(y)), cv::Size(image.size().width, 1))); }); // cut
                                 cv::Mat local;
                                 cv::vconcat(local_images, local);
-                                write_image(tmpDir / std::to_string(z), y, local);
+                                write_image(tmp_dir_local, y, local);
                         }
                 });
                 mi::progress_bar(z + uint32_t(images.size()), sz, step1Str);
@@ -155,7 +159,7 @@ Xyz2ZxyProgram::run() {
         std::mutex mtx;
         mi::progress_bar<uint32_t>(num_of_finished.get(), sy, "Step2 concat");
         mi::repeat_mt(
-                [&num_of_finished, &mtx, &counter, &sy, &step, &sz, &write_image, &read_image, &tmpDir, &outDir = this->output_dir_]() {
+                [&num_of_finished, &mtx, &counter, &sy, &step, &sz, &write_image, &read_image, &tmpDir = this->tmp_dir_, &outDir = this->output_dir_]() {
                 for (uint32_t y = counter.get(); y < sy; y = counter.get()) {
                         std::vector<cv::Mat> local_images;
                         for (uint32_t z = 0; z < sz; z += step) {
@@ -170,7 +174,6 @@ Xyz2ZxyProgram::run() {
                 }
         });
         std::cerr << std::endl;
-        std::filesystem::remove_all(tmpDir);
         return true;
 }
 
