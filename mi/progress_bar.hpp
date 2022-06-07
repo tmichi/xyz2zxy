@@ -30,7 +30,7 @@ namespace mi{
             }
             #endif
             //std::cerr << fmt::format("\033[G{0}:[{1:-<{2}}] ({4:{3}d}/{5})", header, std::string(uint32_t(v * T(ndots) / vmax), '*'), ndots, int(std::log10(vmax)) + 1, v, vmax);
-            std::cerr << "\033[G" << header << ":[" << std::left<<std::setw(ndots) << std::string(uint32_t(v * T(ndots) / vmax), '*') << "] (" << v << "/" << vmax << ")"<<std::flush;      
+            std::cerr << "\033[G" << header << ":[" << std::left<<std::setw(ndots) << std::string(uint32_t(std::round(v * T(ndots) / vmax)), '*') << "] (" << v << "/" << vmax << ")"<<std::flush;
         }
 
         // thread safe version

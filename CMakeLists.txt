@@ -46,8 +46,6 @@ TARGET_INCLUDE_DIRECTORIES(xyz2zxy PRIVATE ${CMAKE_BINARY_DIR})
 ADD_EXECUTABLE(make_sample make_sample.cpp)
 ADD_EXECUTABLE(make_sample16 make_sample16.cpp)
 ADD_EXECUTABLE(validate validate.cpp)
-ADD_EXECUTABLE(validate16 validate16.cpp)
-
 install(TARGETS xyz2zxy
         CONFIGURATIONS Release
         RUNTIME DESTINATION bin
@@ -60,7 +58,7 @@ ADD_CUSTOM_TARGET(check
         )
 ADD_CUSTOM_TARGET(check8
         COMMAND make_sample
-        COMMAND xyz2zxy -i sample -o output -n 4
+        COMMAND xyz2zxy -i sample -o output -n 4 -ext ".png"
         COMMAND validate output
         DEPENDS make_sample xyz2zxy validate
         )
@@ -68,9 +66,9 @@ ADD_CUSTOM_TARGET(check16
         COMMAND make_sample16
         COMMAND xyz2zxy -i sample16 -o output16 -n 4
         COMMAND validate output16
-        DEPENDS xyz2zxy make_sample16 validate16
+        DEPENDS xyz2zxy make_sample16 validate
         )
 ADD_CUSTOM_TARGET(check_custom_pitch
         COMMAND make_sample
-        COMMAND xyz2zxy -i sample -o output_cp -n 4 -pitch 1 3
+        COMMAND xyz2zxy -i sample -o output_cp -n 4 -pitch 1 3 -ext ".png"
         )

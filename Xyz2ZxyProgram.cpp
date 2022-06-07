@@ -19,6 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#include <set>
 #include <iostream>
 #include <iomanip>
 #include <tuple>
@@ -84,14 +85,7 @@ Xyz2ZxyProgram::run() {
                 ss << p.string() <<"/image-" << std::setw(5) << std::setfill('0') <<i<< ext.string();
                 return ss.str();
         };
-        auto write_image = [&get_filename](const std::filesystem::path& dir, uint32_t i, const cv::Mat& image, std::vector<int>& params) {
-                if (image.depth() <= 2) {
-                        return cv::imwrite(get_filename(dir, i), image, params);
-                } else {
-                        std::cerr << "Unsupported depth:" << image.depth() << std::endl;
-                        return false;
-                }
-        };
+
         auto read_image = [&get_filename](const std::filesystem::path& dir, uint32_t i) {
                 return cv::imread(get_filename(dir,i), cv::IMREAD_UNCHANGED);
         };
@@ -100,7 +94,6 @@ Xyz2ZxyProgram::run() {
         };
         
         std::filesystem::path tmpDir = this->output_dir_.string() + "_temp";
-        
         std::filesystem::create_directories(tmpDir);
         std::filesystem::create_directories(this->output_dir_);
         if ( !check_directory(tmpDir) || !check_directory(this->output_dir_)) {
@@ -113,16 +106,29 @@ Xyz2ZxyProgram::run() {
         // dpi =  25.4 mm / (pitch mm/pixel) (inch)
         std::get<0>(dpi) = std::round(25400 / std::get<0>(this->pitch_));
         std::get<1>(dpi) = std::round(25400 / std::get<1>(this->pitch_));
-
+        std::vector<int> params = {
+                cv::IMWRITE_TIFF_XDPI, int(std::get<0>(dpi)),
+                cv::IMWRITE_TIFF_YDPI, int(std::get<1>(dpi)),
+                cv::IMWRITE_TIFF_COMPRESSION, 1 //NO COMPRESSION
+        };
+        auto write_image = [&params, &get_filename](const std::filesystem::path& dir, uint32_t i, const cv::Mat& image) {
+                if (image.depth() <= 2) {
+                        return cv::imwrite(get_filename(dir, i), image, params);
+                } else {
+                        std::cerr << "Unsupported depth:" << image.depth() << std::endl;
+                        return false;
+                }
+        };
         std::cerr << "dpi " << std::get<0>(dpi) << " " << std::get<1>(dpi) << std::endl;
+        
         // get volume size
-        cv::Mat image = cv::imread(this->image_paths_[0].string(), cv::IMREAD_UNCHANGED);
+        cv::Mat image = cv::imread(this->image_paths_[0].string());
         const uint32_t sx = uint32_t(image.size().width);
         const uint32_t sy = uint32_t(image.size().height);
         const uint32_t sz = uint32_t(this->image_paths_.size());
         std::cerr << "image size: " << image.size() << std::endl;
         image.release();
-
+        
         std::string step1Str{ "Step1 divide" };
         mi::progress_bar(0u, sz, step1Str);
         mi::thread_safe_counter<uint32_t> counter;
@@ -137,34 +143,29 @@ Xyz2ZxyProgram::run() {
                                 std::transform(images.begin(), images.end(), std::back_inserter(local_images), [&y, &sx](auto& image) {return cv::Mat(image, cv::Rect(cv::Point(0, int(y)), cv::Size(int(sx), 1))); }); // cut
                                 cv::Mat local;
                                 cv::vconcat(local_images, local);
-                                std::vector<int> params = { cv::IMWRITE_TIFF_COMPRESSION, 1 };
-                                write_image(tmpDir / std::to_string(z), y, local, params);
+                                write_image(tmpDir / std::to_string(z), y, local);
                         }
-                        });
+                });
                 mi::progress_bar(z + uint32_t(images.size()), sz, step1Str);
                 counter.reset(0);
         }
         std::cerr << std::endl;
-
+        
         mi::thread_safe_counter<uint32_t> num_of_finished;
         std::mutex mtx;
         mi::progress_bar<uint32_t>(num_of_finished.get(), sy, "Step2 concat");
         mi::repeat_mt(
-                [&num_of_finished, &mtx, &counter, &sy, &step, &sz, &write_image, &read_image, &dpi, &tmpDir, &outDir = this->output_dir_]() {
+                [&num_of_finished, &mtx, &counter, &sy, &step, &sz, &write_image, &read_image, &tmpDir, &outDir = this->output_dir_]() {
                 for (uint32_t y = counter.get(); y < sy; y = counter.get()) {
                         std::vector<cv::Mat> local_images;
                         for (uint32_t z = 0; z < sz; z += step) {
-                                local_images.push_back(read_image(tmpDir / std::to_string(z), y));
+                                local_images.emplace_back(read_image(tmpDir / std::to_string(z), y));
                         }
                         cv::Mat result;
                         cv::vconcat(local_images, result);
-                        cv::flip(result, result, 0); // mirroring
-                        std::vector<int> params = {
-                            cv::IMWRITE_TIFF_XDPI, int(std::get<0>(dpi)),
-                            cv::IMWRITE_TIFF_YDPI, int(std::get<1>(dpi)),
-                            cv::IMWRITE_TIFF_COMPRESSION, 1 //NO COMPSSION
-                        };
-                        write_image( outDir, y, result, params);
+                        cv::flip(result, result, 1); // horizontal mirroring
+                        cv::rotate(result, result, cv::ROTATE_90_COUNTERCLOCKWISE);
+                        write_image( outDir, y, result);
                         mi::progress_bar(mtx, num_of_finished.get(), sy, "Step2 concat");
                 }
         });

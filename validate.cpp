@@ -23,22 +23,46 @@
 #include <filesystem>
 #include <iostream>
 #include <iomanip>
+#include <filesystem>
 #include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
-int main () {
+#include <opencv2/imgcodecs.hpp>
+
+int main (int argc, char** argv) {
         try {
+                if (argc < 2) {
+                        throw std::runtime_error("Runtime error. Invalid argument "+std::string(argv[1]));
+                }
+                std::vector<std::filesystem::path> paths;
+                std::copy(std::filesystem::directory_iterator(argv[1]), std::filesystem::directory_iterator(), std::back_inserter(paths));
+                std::sort(paths.begin(), paths.end());
                 for (int y = 0 ; y < 256 ; ++y) {
-                        std::stringstream ss;
-                        ss<<"output/image-"<<std::setw(5)<<std::setfill('0')<<y<<".tif";
-                        const auto file = ss.str();
-                        if ( cv::Mat image = cv::imread(file) ; image.empty() ) {
-                                throw std::runtime_error(file + " was empty.");
+                        if ( cv::Mat image = cv::imread(paths[y], cv::IMREAD_UNCHANGED) ; image.empty() ) {
+                                throw std::runtime_error(paths[y].string() + " was empty.");
                         } else if (image.size().width != 256 || image.size().height != 256) {
                                 throw std::runtime_error(" Size different.");
                         } else {
-                                for (int z = 0 ; z < 256 ; ++z) {
-                                        for (int x = 0 ; x < 256; ++x) {
-                                                if (const auto& p = image.at<cv::Vec3b>(z, x) ; 255 - z != p[0] || y != p[1] || x != p[2]) {
+                                for (int x = 0 ; x < 256; ++x) {
+                                        for (int z = 0 ; z < 256 ; ++z) {
+                                                int px, py, pz;
+                                                if (image.depth() == CV_8U) {
+                                                        const auto& p = image.at<cv::Vec3b>(x, z) ;
+                                                        px = p[2];
+                                                        py = p[1];
+                                                        pz = p[0];
+                                                } else if (image.depth() == CV_16U) {
+                                                        const auto& p = image.at<cv::Vec3w>(x, z) ;
+                                                        px = p[2];
+                                                        py = p[1];
+                                                        pz = p[0];
+                                                } else {
+                                                        std::cerr<<paths[y]<<std::endl;
+                                                        std::cerr<<image.depth()<<std::endl;
+                                                        throw std::runtime_error("Unsupport error.");
+                                                }
+                                                if(!(x == px && y == py && z == pz) ){
+                                                        
+                                                        std::cerr<<" "<<px<<" "<<py<<" "<<pz<<std::endl;
+                                                        std::cerr<<" "<<x<<" "<<y<<" "<<z<<std::endl;
                                                         throw std::runtime_error("pixel color different");
                                                 }
                                         }

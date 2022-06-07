@@ -40,7 +40,7 @@ int main () {
                                 }
                         }
                         std::stringstream ss;
-                        ss<<dir.string()<<"/image-"<<std::setw(5)<<std::setfill('0')<<z<<".tif";
+                        ss<<dir.string()<<"/image-"<<std::setw(5)<<std::setfill('0')<<z<<".png";
                         if (!cv::imwrite(ss.str(), image)) {
                                 throw std::runtime_error("The image cannot be created");
                         }
