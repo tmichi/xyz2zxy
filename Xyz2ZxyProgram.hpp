@@ -31,6 +31,7 @@ class Xyz2ZxyProgram : public mi::ProgramTemplate {
 private:
         std::vector<std::filesystem::path> image_paths_;
         std::filesystem::path output_dir_;
+        std::filesystem::path tmp_dir_;
         int num_;
         std::filesystem::path extension_;
         std::tuple<double, double> pitch_;
