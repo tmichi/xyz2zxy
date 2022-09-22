@@ -1,24 +1,24 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
-PROJECT(xyz2zxy VERSION 1.2.0 LANGUAGES CXX)
+PROJECT(xyz2zxy VERSION 1.1.1 LANGUAGES CXX)
+#SET(CMAKE_VERBOSE_MAKEFILE 1)
+#SET(CMAKE_INSTALL_PREFIX "./ex")
 # BUILD mode
-#SET(CMAKE_BUILD_TYPE Debug)
 SET(CMAKE_BUILD_TYPE Release)
-#SET(CMAKE_BUILD_TYPE RelWithDebInfo)
-#SET(CMAKE_BUILD_TYPE MinSizeRel)
-####################
-#### C++ options
-####################
 SET(CMAKE_CXX_STANDARD 17) #11, 17
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_CXX_EXTENSIONS OFF)
 # Libraries
 IF(MSVC)
     SET(OpenCV_DIR "C:/opencv/build") #directory where OpenCVConfig.cmake exists
+    SET(CMAKE_PREFIX_PATH "C:/fmt-8.1.1")
 ENDIF(MSVC)
+
 find_package(OpenCV 4.5.0 REQUIRED)
+find_package(fmt 8.1.1 REQUIRED)
 find_package(Threads REQUIRED)
+
 if (MSVC) #Visual Studio
-    set(CMAKE_CXX_FLAGS "/W4 /EHsc")
+    set(CMAKE_CXX_FLAGS "/W4")
 elseif (CMAKE_COMPILER_IS_GNUCXX) #UNIX
     set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic")
     set(CMAKE_CXX_FLAGS_DEBUG "-g3 -O0 -pg")
@@ -33,44 +33,30 @@ ELSEIF (APPLE)
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g3 -Og -pg")
     set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
 endif ()
-##
-## Executables.
-##
-INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS} .)
-LINK_LIBRARIES(${OpenCV_LIBS} Threads::Threads)
 
-configure_file(Version.hpp.in Version.hpp)
-ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp Xyz2ZxyProgram.hpp Xyz2ZxyProgram.cpp)
-TARGET_INCLUDE_DIRECTORIES(xyz2zxy PRIVATE ${CMAKE_BINARY_DIR})
-
-ADD_EXECUTABLE(make_sample make_sample.cpp)
-ADD_EXECUTABLE(make_sample16 make_sample16.cpp)
-ADD_EXECUTABLE(validate validate.cpp)
-ADD_EXECUTABLE(validate16 validate16.cpp)
-
-install(TARGETS xyz2zxy
-        CONFIGURATIONS Release
-        RUNTIME DESTINATION bin
-        )
-##
-## Validation script
-##
+INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS} . ${CMAKE_BINARY_DIR})
+LINK_LIBRARIES(${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
+configure_file(xyz2zxy_version.hpp.in xyz2zxy_version.hpp)
+configure_file(README.txt.in README.txt)
+ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp)
+ADD_EXECUTABLE(xyz2yzx xyz2yzx_main.cpp)
+ADD_EXECUTABLE(make_sample tests/make_sample.cpp)
+ADD_EXECUTABLE(make_sample16 tests/make_sample16.cpp)
+ADD_EXECUTABLE(validate tests/validate.cpp)
+ADD_EXECUTABLE(validate_yzx tests/validate_yzx.cpp)
+ADD_EXECUTABLE(validate16 tests/validate16.cpp)
 ADD_CUSTOM_TARGET(check
-        DEPENDS check8 check16 check_custom_pitch
-        )
-ADD_CUSTOM_TARGET(check8
         COMMAND make_sample
-        COMMAND xyz2zxy -i sample -o output -n 4
+        COMMAND xyz2zxy -i sample -o output -n 8
         COMMAND validate output
-        DEPENDS make_sample xyz2zxy validate
-        )
-ADD_CUSTOM_TARGET(check16
+        COMMAND xyz2yzx -i sample -o output_yzx -n 8
+        COMMAND validate_yzx output_yzx
         COMMAND make_sample16
-        COMMAND xyz2zxy -i sample16 -o output16 -n 4
+        COMMAND xyz2zxy -i sample16 -o output16 -n 8
         COMMAND validate output16
-        DEPENDS xyz2zxy make_sample16 validate16
+        DEPENDS make_sample xyz2zxy validate make_sample16 validate16
         )
-ADD_CUSTOM_TARGET(check_custom_pitch
-        COMMAND make_sample
-        COMMAND xyz2zxy -i sample -o output_cp -n 4 -pitch 1 3
-        )
+INSTALL(TARGETS xyz2zxy RUNTIME DESTINATION bin)
+INSTALL(FILES ${CMAKE_BINARY_DIR}/README.txt DESTINATION .)
+set(CPACK_GENERATOR "ZIP")
+include(CPack)

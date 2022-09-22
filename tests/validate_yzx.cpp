@@ -1,5 +1,5 @@
 //
-// Created by Takashi Michikawa on 2022/05/16.
+// Created by Takashi Michikawa on 2022/09/22.
 //
 /**
  * MIT License
@@ -25,21 +25,22 @@
 #include <filesystem>
 #include <iostream>
 #include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui.hpp>
+#include <fmt/core.h>
 int main () {
         try {
-                for (int y = 0 ; y < 256 ; ++y) {
-                        std::stringstream ss;
-                        ss<<"output16/image-"<<std::setw(5)<<std::setfill('0')<<y<<".tif";
-                        const auto file = ss.str();
-                        if ( cv::Mat image = cv::imread(file, cv::IMREAD_UNCHANGED) ; image.empty() ) {
+                for (int x = 0 ; x < 256 ; ++x) {
+                        const auto file = fmt::format("{0}/image-{1:05d}.tif", "output", x);
+                        if ( cv::Mat image = cv::imread(file) ; image.empty() ) {
                                 throw std::runtime_error(file + " was empty.");
                         } else if (image.size().width != 256 || image.size().height != 256) {
                                 throw std::runtime_error(" Size different.");
                         } else {
                                 for (int z = 0 ; z < 256 ; ++z) {
-                                        for (int x = 0 ; x < 256; ++x) {
-                                                if (const auto& p = image.at<cv::Vec3w>(z, x) ; 255 - z != p[0] || y != p[1] || x != p[2]) {
+                                        for (int y = 0 ; y < 256; ++y) {
+                                                if (const auto& p = image.at<cv::Vec3b>(z, y) ; y != p[0] || z!= p[2] || x != p[1]) {
+                                                        std::cerr<<(int)p[0]<<" "<<(int)p[1]<<" "<<(int)p[2]<<std::endl;
+                                                        std::cerr<<" "<<x<<" "<<y<<" "<<z<<std::endl;
                                                         throw std::runtime_error("pixel color different");
                                                 }
                                         }
