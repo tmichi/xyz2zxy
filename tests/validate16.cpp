@@ -38,7 +38,9 @@ int main () {
                         } else {
                                 for (int z = 0 ; z < 256 ; ++z) {
                                         for (int x = 0 ; x < 256; ++x) {
-                                                if (const auto& p = image.at<cv::Vec3w>(z, x) ; 255 - z != p[0] || y != p[1] || x != p[2]) {
+                                                if (const auto& p = image.at<cv::Vec3b>(x, z) ; z != p[0] || y != p[1] || x != p[2]) {
+                                                        std::cerr<<(int)p[0]<<" "<<(int)p[1]<<" "<<(int)p[2]<<std::endl;
+                                                        std::cerr<<" "<<x<<" "<<y<<" "<<z<<std::endl;
                                                         throw std::runtime_error("pixel color different");
                                                 }
                                         }

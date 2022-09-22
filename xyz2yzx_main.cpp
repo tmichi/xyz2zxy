@@ -15,7 +15,7 @@
 
 /**
  * MIT License
- * Copyright (c) 2021 RIKEN
+ * Copyright (c) 2022 RIKEN
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -73,7 +73,7 @@ int main(const int argc, const char **argv) {
                 attrSet.createAttribute("-n", step).setMessage("The number of steps (Default: 100, Larger n is probably fast but it causes large memory consumption.)").setValidator(mi::attr::greater(0));
                 attrSet.createAttribute("-ext", extension).setMessage("Extension of the images (e.g., .tif, .png. Default : .tif)");
                 if (!attrSet.parse(arg)) {
-                        std::cerr<<"xyz2zxy version. "<<XYZ2ZXY_VERSION<<std::endl;
+                        std::cerr<<"xyz2yzx version. "<<XYZ2ZXY_VERSION<<std::endl;
                         std::cerr << "Usage :" << std::endl;
                         attrSet.printUsage();
                         throw std::runtime_error("Insufficient arguments");
@@ -101,24 +101,25 @@ int main(const int argc, const char **argv) {
                 cv::Mat image = cv::imread(image_paths[0].string(), cv::IMREAD_UNCHANGED);
                 const uint32_t sx = uint32_t(image.size().width);
                 const uint32_t sy = uint32_t(image.size().height);
-                image.release();
                 const uint32_t sz = uint32_t(image_paths.size());
-                
+                image.release();
                 std::string step1Str{"Step1 divide"};
                 progress_bar(0u, sz, step1Str);
                 mi::thread_safe_counter<uint32_t> counter;
                 for (uint32_t z = 0; z < sz; z += step) {
                         std::vector<cv::Mat> images;
                         const uint32_t end = (z + step < sz) ? z + step : sz;
-                        std::transform(image_paths.begin() + z, image_paths.begin() + end, std::back_inserter(images), [](auto &f) { return cv::imread(f.string(), cv::IMREAD_UNCHANGED); });
+                        std::transform(image_paths.begin() + z, image_paths.begin() + end, std::back_inserter(images), [](auto &f) {
+                                return cv::imread(f.string(), cv::IMREAD_UNCHANGED);
+                        });
                         create_directory(tmpDir / std::to_string(z));
                         mi::repeat_mt([&counter, &images, &sx, &sy, &z, &get_tmp_filename, &write_image]() {
-                                for (uint32_t y = counter.get(); y < sy; y = counter.get()) {
+                                for (uint32_t x = counter.get(); x < sx; x = counter.get()) {
                                         std::vector<cv::Mat> local_images;
-                                        std::transform(images.begin(), images.end(), std::back_inserter(local_images),[&y, &sx](auto &image) { return cv::Mat(image, cv::Rect(cv::Point(0, int(y)), cv::Size(int(sx), 1))); }); // cut
+                                        std::transform(images.begin(), images.end(), std::back_inserter(local_images),[&x, &sy](auto &image) { return cv::Mat(image, cv::Rect(cv::Point( int(x), 0), cv::Size(1, int(sy)))); }); // cut
                                         cv::Mat local;
-                                        cv::vconcat(local_images, local);
-                                        write_image(get_tmp_filename(y, z), local);
+                                        cv::hconcat(local_images, local);
+                                        write_image(get_tmp_filename(x, z), local);
                                 }
                         });
                         progress_bar(z + uint32_t(images.size()), sz, step1Str);
@@ -126,20 +127,20 @@ int main(const int argc, const char **argv) {
                 }
                 std::cerr << std::endl;
                 mi::thread_safe_counter<uint32_t> num_of_finished;
-                progress_bar<uint32_t>(num_of_finished.get(), sy, "Step2 concat");
+                progress_bar<uint32_t>(num_of_finished.get(), sx, "Step2 concat");
                 std::mutex mtx;
                 mi::repeat_mt([&]() {
-                                for (uint32_t y = counter.get(); y < sy; y = counter.get()) {
+                                for (uint32_t x = counter.get(); x < sx; x = counter.get()) {
                                         std::vector<cv::Mat> local_images;
                                         for (uint32_t z = 0; z < sz; z += step) {
-                                                local_images.push_back(cv::imread(get_tmp_filename(y, z), cv::IMREAD_ANYDEPTH | cv::IMREAD_ANYCOLOR));
+                                                local_images.push_back(cv::imread(get_tmp_filename(x, z), cv::IMREAD_ANYDEPTH | cv::IMREAD_ANYCOLOR));
                                         }
                                         cv::Mat result;
-                                        cv::vconcat(local_images, result);
+                                        cv::hconcat(local_images, result);
                                         cv::flip(result, result, 0); // mirroring
                                         cv::rotate(result, result, cv::ROTATE_90_CLOCKWISE);
-                                        write_image(outputDir.string() + "/" + fmt::format("image-{:05d}.tif", y), result);
-                                        progress_bar(mtx, num_of_finished.get(), sy, "Step2 concat");
+                                        write_image(outputDir.string() + "/" + fmt::format("image-{:05d}.tif", x), result);
+                                        progress_bar(mtx, num_of_finished.get(), sx, "Step2 concat");
                                 }
                         });
                 std::cerr << std::endl;

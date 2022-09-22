@@ -1,4 +1,6 @@
-// Created by Takashi Michikawa.
+//
+// Created by Takashi Michikawa on 2022/09/22.
+//
 /**
  * MIT License
  * Copyright (c) 2021 RIKEN
@@ -27,16 +29,18 @@
 #include <fmt/core.h>
 int main () {
         try {
-                for (int y = 0 ; y < 256 ; ++y) {
-                        const auto file = fmt::format("{0}/image-{1:05d}.tif", "output", y);
+                for (int x = 0 ; x < 256 ; ++x) {
+                        const auto file = fmt::format("{0}/image-{1:05d}.tif", "output", x);
                         if ( cv::Mat image = cv::imread(file) ; image.empty() ) {
                                 throw std::runtime_error(file + " was empty.");
                         } else if (image.size().width != 256 || image.size().height != 256) {
                                 throw std::runtime_error(" Size different.");
                         } else {
                                 for (int z = 0 ; z < 256 ; ++z) {
-                                        for (int x = 0 ; x < 256; ++x) {
-                                                if (const auto& p = image.at<cv::Vec3b>(z, x) ; 255 - z != p[0] || y != p[1] || x != p[2]) {
+                                        for (int y = 0 ; y < 256; ++y) {
+                                                if (const auto& p = image.at<cv::Vec3b>(z, y) ; y != p[0] || z!= p[2] || x != p[1]) {
+                                                        std::cerr<<(int)p[0]<<" "<<(int)p[1]<<" "<<(int)p[2]<<std::endl;
+                                                        std::cerr<<" "<<x<<" "<<y<<" "<<z<<std::endl;
                                                         throw std::runtime_error("pixel color different");
                                                 }
                                         }
