@@ -1,6 +1,7 @@
 xyz2zxy version @xyz2zxy_VERSION_MAJOR@.@xyz2zxy_VERSION_MINOR@.@xyz2zxy_VERSION_PATCH@
 
 xyz2zxy -i {input_dir} -o {output_dir} -n {n}
+xyz2yzx -i {input_dir} -o {output_dir} -n {n}
    {input_dir}: the directory where images are contained.
    {output_dir}: the directory where converted images are saved.
    n: the number of images that are loaded in the memory (Default : 100). Larger n computes faster, but requires large memory size.

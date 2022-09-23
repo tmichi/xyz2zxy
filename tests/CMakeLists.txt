@@ -1,0 +1,5 @@
+ADD_EXECUTABLE(make_sample make_sample.cpp)
+ADD_EXECUTABLE(make_sample16 make_sample16.cpp)
+ADD_EXECUTABLE(validate validate.cpp)
+ADD_EXECUTABLE(validate_yzx validate_yzx.cpp)
+ADD_EXECUTABLE(validate16 validate16.cpp)

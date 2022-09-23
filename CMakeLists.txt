@@ -38,13 +38,10 @@ INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS} . ${CMAKE_BINARY_DIR})
 LINK_LIBRARIES(${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
 configure_file(xyz2zxy_version.hpp.in xyz2zxy_version.hpp)
 configure_file(README.txt.in README.txt)
+
 ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp)
 ADD_EXECUTABLE(xyz2yzx xyz2yzx_main.cpp)
-ADD_EXECUTABLE(make_sample tests/make_sample.cpp)
-ADD_EXECUTABLE(make_sample16 tests/make_sample16.cpp)
-ADD_EXECUTABLE(validate tests/validate.cpp)
-ADD_EXECUTABLE(validate_yzx tests/validate_yzx.cpp)
-ADD_EXECUTABLE(validate16 tests/validate16.cpp)
+ADD_SUBDIRECTORY(tests)
 ADD_CUSTOM_TARGET(check
         COMMAND make_sample
         COMMAND xyz2zxy -i sample -o output -n 8
@@ -56,6 +53,9 @@ ADD_CUSTOM_TARGET(check
         COMMAND validate output16
         DEPENDS make_sample xyz2zxy validate make_sample16 validate16
         )
+#
+# Archiving by CPack
+#
 INSTALL(TARGETS xyz2zxy xyz2yzx RUNTIME DESTINATION bin)
 INSTALL(FILES ${CMAKE_BINARY_DIR}/README.txt DESTINATION .)
 set(CPACK_GENERATOR "ZIP")
