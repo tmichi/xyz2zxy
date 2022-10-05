@@ -22,11 +22,19 @@
 */
 #include <filesystem>
 #include <iostream>
+#include <iomanip>
+#include <filesystem>
 #include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
-#include <fmt/core.h>
-int main () {
+#include <opencv2/imgcodecs.hpp>
+
+int main (int argc, char** argv) {
         try {
+                if (argc < 2) {
+                        throw std::runtime_error("Runtime error. Invalid argument "+std::string(argv[1]));
+                }
+                std::vector<std::filesystem::path> paths;
+                std::copy(std::filesystem::directory_iterator(argv[1]), std::filesystem::directory_iterator(), std::back_inserter(paths));
+                std::sort(paths.begin(), paths.end());
                 for (int y = 0 ; y < 256 ; ++y) {
                         const auto file = fmt::format("{0}/image-{1:05d}.tif", "output", y);
                         if ( cv::Mat image = cv::imread(file) ; image.empty() ) {
@@ -36,9 +44,7 @@ int main () {
                         } else {
                                 for (int z = 0 ; z < 256 ; ++z) {
                                         for (int x = 0 ; x < 256; ++x) {
-                                                if (const auto& p = image.at<cv::Vec3b>(x, z) ; z != p[0] || y != p[1] || x != p[2]) {
-                                                        std::cerr<<(int)p[0]<<" "<<(int)p[1]<<" "<<(int)p[2]<<std::endl;
-                                                        std::cerr<<" "<<x<<" "<<y<<" "<<z<<std::endl;
+                                                if (const auto& p = image.at<cv::Vec3b>(z, x) ; 255 - z != p[0] || y != p[1] || x != p[2]) {
                                                         throw std::runtime_error("pixel color different");
                                                 }
                                         }
