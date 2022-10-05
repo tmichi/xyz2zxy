@@ -10,9 +10,8 @@
 #include <fmt/core.h>
 #include <mi/thread_safe_counter.hpp>
 #include <mi/repeat.hpp>
-#include <mi/Attribute.hpp>
 #include <xyz2zxy_version.hpp>
-
+#include "AttributeTuple.hpp"
 /**
  * MIT License
  * Copyright (c) 2021 RIKEN
@@ -51,27 +50,20 @@ int main(const int argc, const char **argv) {
                         throw std::runtime_error(path.string() + " cannot be created.");
                 }
         };
-        auto write_image = [](const std::string filename, const cv::Mat &image) {
-                if (image.depth() <= 2) {
-                        std::vector<int> params = {cv::IMWRITE_TIFF_COMPRESSION, 1};
-                        cv::imwrite(filename, image, params);
-                } else {
-                        std::cerr << "Unsupported depth:" << image.depth() << std::endl;
-                        return false;
-                }
-                return true;
-        };
-        try {
+        try{
                 std::filesystem::path outputDir;
                 int step = 100;
                 std::filesystem::path extension = ".tif";
                 std::filesystem::path input_dir;
+                std::tuple<double, double> pitch;
                 mi::Argument arg(argc, argv);
                 mi::AttributeSet attrSet;
                 attrSet.createAttribute("-i", input_dir).setMessage("Input directory").setMandatory();
                 attrSet.createAttribute("-o", outputDir).setMessage("Output directory (default : output/)");
                 attrSet.createAttribute("-n", step).setMessage("The number of steps (Default: 100, Larger n is probably fast but it causes large memory consumption.)").setValidator(mi::attr::greater(0));
                 attrSet.createAttribute("-ext", extension).setMessage("Extension of the images (e.g., .tif, .png. Default : .tif)");
+                attrSet.createAttribute("-pitch", pitch).setMessage("Custom voxel pitch (x, y)").setValidator([](const std::tuple<double, double>& p) {return std::get<0>(p) > 0 && std::get<1>(p) > 0; }, true);
+                
                 if (!attrSet.parse(arg)) {
                         std::cerr<<"xyz2zxy version. "<<XYZ2ZXY_VERSION<<std::endl;
                         std::cerr << "Usage :" << std::endl;
@@ -103,7 +95,26 @@ int main(const int argc, const char **argv) {
                 const uint32_t sy = uint32_t(image.size().height);
                 image.release();
                 const uint32_t sz = uint32_t(image_paths.size());
-                
+                std::tuple<double, double> dpi;
+                // dpi =  25.4 mm / (pitch mm/pixel) (inch)
+                std::get<0>(dpi) = std::round(25400 / std::get<0>(pitch));
+                std::get<1>(dpi) = std::round(25400 / std::get<1>(pitch));
+                std::vector<int> params = {
+                        cv::IMWRITE_TIFF_XDPI, int(std::get<0>(dpi)),
+                        cv::IMWRITE_TIFF_YDPI, int(std::get<1>(dpi)),
+                        cv::IMWRITE_TIFF_COMPRESSION, 1 //NO COMPRESSION
+                };
+        
+                auto write_image = [&params](const std::string filename, const cv::Mat &image) {
+                        if (image.depth() <= 2) {
+                                cv::imwrite(filename, image, params);
+                        } else {
+                                std::cerr << "Unsupported depth:" << image.depth() << std::endl;
+                                return false;
+                        }
+                        return true;
+                };
+        
                 std::string step1Str{"Step1 divide"};
                 progress_bar(0u, sz, step1Str);
                 mi::thread_safe_counter<uint32_t> counter;
