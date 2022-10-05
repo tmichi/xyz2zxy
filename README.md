@@ -12,7 +12,7 @@ Convert XY cross-sectional images to ZX cross-sectional images.
 * This can be used for observation of very large serial-sectioning images in a different axis-aligned cross-section.
 
 ## Requirements
-* CMake (> v.3.*.*)
+* CMake (> v.3.10)
 * C++17 or later (filesystem)
 * OpenCV (> v.4.5.0)
 * fmt (https://fmt.dev) (v.8.0.1 or later)
@@ -48,7 +48,9 @@ validation ok
   * ``{input_dir}`` : the directory where images are contained.
   * ``{output_dir}`` : the directory where converted images are saved.
   * ``n`` : the number of images that are loaded in the memory (Default : 100). Larger n computes faster, but requires large memory size.
-*  ``make_sample, validate`` : executables for validation.
+* "xyz2yzx" is also available.
+* ``make_sample, validate`` : executables for validation.
+
 ## License 
 * MIT License
 ## Authors

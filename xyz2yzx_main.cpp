@@ -147,7 +147,10 @@ int main(const int argc, const char **argv) {
                 std::filesystem::remove_all(tmpDir);
         } catch (std::runtime_error &e) {
                 std::cerr << e.what() << std::endl;
-        } catch (...) {
+        } catch (cv::Exception& e) {
+                std::cerr<<"OpenCV exception "<<e.what()<<std::endl;
+        }
+        catch (...) {
                 std::cerr << "Unknown error" << std::endl;
         }
         return EXIT_SUCCESS;
