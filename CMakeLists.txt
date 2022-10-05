@@ -1,7 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
-PROJECT(xyz2zxy VERSION 1.1.1 LANGUAGES CXX)
-#SET(CMAKE_VERBOSE_MAKEFILE 1)
-#SET(CMAKE_INSTALL_PREFIX "./ex")
+PROJECT(xyz2zxy VERSION 1.2.0 LANGUAGES CXX)
 # BUILD mode
 SET(CMAKE_BUILD_TYPE Release)
 SET(CMAKE_CXX_STANDARD 17) #11, 17
@@ -12,13 +10,11 @@ IF(MSVC)
     SET(OpenCV_DIR "C:/opencv/build") #directory where OpenCVConfig.cmake exists
     SET(CMAKE_PREFIX_PATH "C:/fmt-8.1.1")
 ENDIF(MSVC)
-
 find_package(OpenCV 4.5.0 REQUIRED)
 find_package(fmt 8.1.1 REQUIRED)
 find_package(Threads REQUIRED)
-
 if (MSVC) #Visual Studio
-    set(CMAKE_CXX_FLAGS "/W4")
+    set(CMAKE_CXX_FLAGS "/W4 /EHsc")
 elseif (CMAKE_COMPILER_IS_GNUCXX) #UNIX
     set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic")
     set(CMAKE_CXX_FLAGS_DEBUG "-g3 -O0 -pg")
@@ -46,13 +42,16 @@ ADD_EXECUTABLE(validate tests/validate.cpp)
 ADD_EXECUTABLE(validate_yzx tests/validate_yzx.cpp)
 ADD_EXECUTABLE(validate16 tests/validate16.cpp)
 ADD_CUSTOM_TARGET(check
+        DEPENDS check8  check_custom_pitch
+        )
+ADD_CUSTOM_TARGET(check8
         COMMAND make_sample
         COMMAND xyz2zxy -i sample -o output -n 8
         COMMAND validate output
         COMMAND xyz2yzx -i sample -o output_yzx -n 8
         COMMAND validate_yzx output_yzx
         COMMAND make_sample16
-        COMMAND xyz2zxy -i sample16 -o output16 -n 8
+        COMMAND xyz2zxy -i sample16 -o output16 -n 4
         COMMAND validate output16
         DEPENDS make_sample xyz2zxy validate make_sample16 validate16
         )
@@ -60,3 +59,7 @@ INSTALL(TARGETS xyz2zxy RUNTIME DESTINATION bin)
 INSTALL(FILES ${CMAKE_BINARY_DIR}/README.txt DESTINATION .)
 set(CPACK_GENERATOR "ZIP")
 include(CPack)
+ADD_CUSTOM_TARGET(check_custom_pitch
+        COMMAND make_sample
+        COMMAND xyz2zxy -i sample -o output_cp -n 4 -pitch 1 3
+        )

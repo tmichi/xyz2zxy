@@ -22,11 +22,20 @@
 */
 #include <filesystem>
 #include <iostream>
+#include <iomanip>
+#include <filesystem>
 #include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
+#include <opencv2/imgcodecs.hpp>
 #include <fmt/core.h>
-int main () {
+
+int main (int argc, char** argv) {
         try {
+                if (argc < 2) {
+                        throw std::runtime_error("Runtime error. Invalid argument "+std::string(argv[1]));
+                }
+                std::vector<std::filesystem::path> paths;
+                std::copy(std::filesystem::directory_iterator(argv[1]), std::filesystem::directory_iterator(), std::back_inserter(paths));
+                std::sort(paths.begin(), paths.end());
                 for (int y = 0 ; y < 256 ; ++y) {
                         const auto file = fmt::format("{0}/image-{1:05d}.tif", "output", y);
                         if ( cv::Mat image = cv::imread(file) ; image.empty() ) {
