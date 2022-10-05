@@ -42,6 +42,7 @@ configure_file(README.txt.in README.txt)
 ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp)
 ADD_EXECUTABLE(xyz2yzx xyz2yzx_main.cpp)
 ADD_SUBDIRECTORY(tests)
+
 ADD_CUSTOM_TARGET(check
         COMMAND make_sample
         COMMAND xyz2zxy -i sample -o output -n 8
