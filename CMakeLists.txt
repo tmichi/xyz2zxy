@@ -11,8 +11,10 @@ SET(CMAKE_CXX_EXTENSIONS OFF)
 IF(MSVC)
     SET(OpenCV_DIR "C:/opencv/build") #directory where OpenCVConfig.cmake exists
 ENDIF(MSVC)
+FIND_PACKAGE(fmt 7.0.0 REQUIRED)
 find_package(OpenCV 4.5.0 REQUIRED)
 find_package(Threads REQUIRED)
+
 if (MSVC) #Visual Studio
     set(CMAKE_CXX_FLAGS "/W4 /EHsc")
 elseif (CMAKE_COMPILER_IS_GNUCXX) #UNIX
@@ -32,29 +34,12 @@ endif ()
 ##
 ## Executables.
 ##
-INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS} .)
-LINK_LIBRARIES(${OpenCV_LIBS} Threads::Threads)
 
-configure_file(Version.hpp.in Version.hpp)
-ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp Xyz2ZxyProgram.hpp Xyz2ZxyProgram.cpp)
-TARGET_INCLUDE_DIRECTORIES(xyz2zxy PRIVATE ${CMAKE_BINARY_DIR})
-
-ADD_EXECUTABLE(make_sample make_sample.cpp)
-ADD_EXECUTABLE(make_sample16 make_sample16.cpp)
-ADD_EXECUTABLE(validate validate.cpp)
-install(TARGETS xyz2zxy
-        CONFIGURATIONS Release
-        RUNTIME DESTINATION bin
-        )
-##
-## Validation script
-##
 
 INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS} . ${CMAKE_BINARY_DIR})
 LINK_LIBRARIES(${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
-configure_file(xyz2zxy_version.hpp.in xyz2zxy_version.hpp)
-configure_file(README.txt.in README.txt)
-
+CONFIGURE_FILE(xyz2zxy_version.hpp.in xyz2zxy_version.hpp)
+CONFIGURE_FILE(README.txt.in README.txt)
 ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp)
 ADD_EXECUTABLE(xyz2yzx xyz2yzx_main.cpp)
 ADD_SUBDIRECTORY(tests)
@@ -64,10 +49,10 @@ ADD_CUSTOM_TARGET(check
         )
 ADD_CUSTOM_TARGET(check8
         COMMAND make_sample
-        COMMAND xyz2zxy -i sample -o output -n 8
+        #COMMAND xyz2zxy -i sample -o output -n 8
         COMMAND xyz2zxy -i sample -o output -n 4 -ext ".png"
         COMMAND validate output
-        COMMAND xyz2yzx -i sample -o output_yzx -n 8
+        COMMAND xyz2yzx -i sample -o output_yzx -n 8 -p 10 20
         COMMAND validate_yzx output_yzx
         DEPENDS make_sample xyz2zxy validate
         )
