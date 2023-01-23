@@ -1,6 +1,6 @@
 /** @author Takashi Michikawa <michi@riken.jp>
   */
-//#include "Xyz2ZxyProgram.hpp"
+
 #include <vector>
 #include <filesystem>
 #include <iostream>
@@ -35,14 +35,13 @@
  * SOFTWARE.
  */
 template <typename T>
-inline auto progress_bar(const T v, const T vmax, const std::string header = "progress", const int ndots = 20) {
-        std::cerr<<fmt::format("\r{0}:[{1:-<{2}}] ({4:{3}d}/{5})", header, std::string(uint32_t(v * T(ndots) / vmax), '*'), ndots, int(std::log10(vmax))+1, v, vmax);
-}
-template <typename T>
 inline auto progress_bar(std::mutex& mtx, const T v, const T vmax, const std::string header = "progress", const int ndots = 20) {
         std::lock_guard<std::mutex> lock(mtx);
-        progress_bar(v, vmax, header, ndots);
+        std::cerr << "\r" << header << ":[" << std::setw(ndots) << std::setfill('-') << std::left
+                  << std::string(v * ndots / vmax, '*') << "] " << "(" << std::setw(std::to_string(vmax).length())
+                  << std::setfill(' ') << std::right << v << "/" << vmax << ")";
 }
+
 
 int main(const int argc, const char **argv) {
         auto create_directory = [](const std::filesystem::path &path) {
@@ -51,34 +50,47 @@ int main(const int argc, const char **argv) {
                         throw std::runtime_error(path.string() + " cannot be created.");
                 }
         };
-        auto write_image = [](const std::string filename, const cv::Mat &image) {
-                if (image.depth() <= 2) {
-                        std::vector<int> params = {cv::IMWRITE_TIFF_COMPRESSION, 1};
-                        cv::imwrite(filename, image, params);
-                } else {
-                        std::cerr << "Unsupported depth:" << image.depth() << std::endl;
-                        return false;
-                }
-                return true;
-        };
+
         try {
+                std::mutex mtx;
                 std::filesystem::path outputDir;
                 int step = 100;
                 std::filesystem::path extension = ".tif";
                 std::filesystem::path input_dir;
+                std::tuple<double, double> pitch;
                 mi::Argument arg(argc, argv);
                 mi::AttributeSet attrSet;
                 attrSet.createAttribute("-i", input_dir).setMessage("Input directory").setMandatory();
                 attrSet.createAttribute("-o", outputDir).setMessage("Output directory (default : output/)");
                 attrSet.createAttribute("-n", step).setMessage("The number of steps (Default: 100, Larger n is probably fast but it causes large memory consumption.)").setValidator(mi::attr::greater(0));
                 attrSet.createAttribute("-ext", extension).setMessage("Extension of the images (e.g., .tif, .png. Default : .tif)");
+                attrSet.createAttribute("-p", pitch).setMessage("Pixel resolution");
                 if (!attrSet.parse(arg)) {
                         std::cerr<<"xyz2yzx version. "<<XYZ2ZXY_VERSION<<std::endl;
                         std::cerr << "Usage :" << std::endl;
                         attrSet.printUsage();
                         throw std::runtime_error("Insufficient arguments");
                 }
-                
+
+                std::tuple<double, double> dpi;
+                // dpi =  25.4 mm / (pitch mm/pixel) (inch)
+                std::get<0>(dpi) = std::round(25400 / std::get<0>(pitch));
+                std::get<1>(dpi) = std::round(25400 / std::get<1>(pitch));
+                std::vector<int> params = {
+                        cv::IMWRITE_TIFF_XDPI, int(std::get<0>(dpi)),
+                        cv::IMWRITE_TIFF_YDPI, int(std::get<1>(dpi)),
+                        cv::IMWRITE_TIFF_COMPRESSION, 1 //NO COMPRESSION
+                };
+                auto write_image = [&params](const std::string filename, const cv::Mat &image) {
+                        if (image.depth() <= 2) {
+                                cv::imwrite(filename, image, params);
+                        } else {
+                                std::cerr << "Unsupported depth:" << image.depth() << std::endl;
+                                return false;
+                        }
+                        return true;
+                };
+
                 std::vector<std::filesystem::path> image_paths;
                 std::copy_if(std::filesystem::directory_iterator(input_dir), std::filesystem::directory_iterator(), std::back_inserter(image_paths), [&extension](const auto &f) {
                                      return !std::filesystem::is_directory(f) &&
@@ -104,7 +116,7 @@ int main(const int argc, const char **argv) {
                 const uint32_t sz = uint32_t(image_paths.size());
                 image.release();
                 std::string step1Str{"Step1 divide"};
-                progress_bar(0u, sz, step1Str);
+                progress_bar(mtx, 0u, sz, step1Str);
                 mi::thread_safe_counter<uint32_t> counter;
                 for (uint32_t z = 0; z < sz; z += step) {
                         std::vector<cv::Mat> images;
@@ -122,13 +134,12 @@ int main(const int argc, const char **argv) {
                                         write_image(get_tmp_filename(x, z), local);
                                 }
                         });
-                        progress_bar(z + uint32_t(images.size()), sz, step1Str);
+                        progress_bar(mtx, z + uint32_t(images.size()), sz, step1Str);
                         counter.reset(0);
                 }
                 std::cerr << std::endl;
                 mi::thread_safe_counter<uint32_t> num_of_finished;
-                progress_bar<uint32_t>(num_of_finished.get(), sx, "Step2 concat");
-                std::mutex mtx;
+                progress_bar<uint32_t>(mtx, num_of_finished.get(), sx, "Step2 concat");
                 mi::repeat_mt([&]() {
                                 for (uint32_t x = counter.get(); x < sx; x = counter.get()) {
                                         std::vector<cv::Mat> local_images;

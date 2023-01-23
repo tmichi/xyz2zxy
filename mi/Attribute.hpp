@@ -19,10 +19,27 @@
 #include <type_traits>
 #include <algorithm>
 
+template <typename T, typename S>
+std::ostream& operator << (std::ostream& os, std::tuple<T,S>& v) {
+        os << "(" << std::get<0>(v) << ", " << std::get<1>(v) << ")" << std::endl;
+        return os;
+}
 namespace mi {
         template<typename T> using attribute_getter_t = std::function<bool(const Argument &arg, const std::string &, T &)>;
         template<typename T> using validator_t = std::function<bool(const T &)>;
 
+        template< typename T>
+        inline auto attribute_getter() -> decltype( std::enable_if_t<std::is_same_v<T, std::tuple<double, double>>>(),
+                std::function<bool(const Argument &arg, const std::string &, T &)>()){
+                return [](const Argument& arg, const std::string& key, T& value) {
+                        if (arg.exist(key, 2)) {
+                                value = T(arg.get<double>(key, 1), arg.get<double>(key, 2));
+                                return true;
+                        } else {
+                                return false;
+                        }
+                };
+        }
 /**
  * @brief Attribute getter
  * @tparam T
