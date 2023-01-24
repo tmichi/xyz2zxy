@@ -7,9 +7,9 @@
  */
 #ifndef MI_ATTRIBUTE_HPP
 #define MI_ATTRIBUTE_HPP 1
-#include <filesystem>
-#include "Argument.hpp"
+#include <algorithm>
 #include <deque>
+#include <filesystem>
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -17,29 +17,46 @@
 #include <list>
 #include <string>
 #include <type_traits>
-#include <algorithm>
+#include <tuple>
+#include "Argument.hpp"
 
-template <typename T, typename S>
-std::ostream& operator << (std::ostream& os, std::tuple<T,S>& v) {
-        os << "(" << std::get<0>(v) << ", " << std::get<1>(v) << ")" << std::endl;
+template <typename T, typename... Types>
+std::ostream& operator<<(std::ostream& os, const std::tuple<T, Types...>& myTuple) {
+        os << "(";
+        std::apply([&os](const auto&... args) {((os << args << ", "), ...);}, myTuple);
+        os << "\b\b)";
         return os;
 }
+
 namespace mi {
         template<typename T> using attribute_getter_t = std::function<bool(const Argument &arg, const std::string &, T &)>;
         template<typename T> using validator_t = std::function<bool(const T &)>;
 
-        template< typename T>
-        inline auto attribute_getter() -> decltype( std::enable_if_t<std::is_same_v<T, std::tuple<double, double>>>(),
-                std::function<bool(const Argument &arg, const std::string &, T &)>()){
-                return [](const Argument& arg, const std::string& key, T& value) {
-                        if (arg.exist(key, 2)) {
-                                value = T(arg.get<double>(key, 1), arg.get<double>(key, 2));
-                                return true;
-                        } else {
+        template <typename T, std::size_t... Is>
+        void set_tuple_from_array(T& tuple, const Argument& arg, const int idx,  std::index_sequence<Is...>) {
+                std::apply([&arg, &idx](auto&... elems) {
+                        ((void)(std::tie(elems) = std::make_tuple(arg.get<std::tuple_element_t<Is, T>>(idx + Is))), ...);
+                }, tuple);
+        }
+
+        // is_tupleの定義
+        template<typename T> struct is_tuple : std::false_type {};
+        template<typename... Ts> struct is_tuple<std::tuple<Ts...>> : std::true_type {};
+
+        // tuple のloader
+        template <typename TupleType>
+        inline auto attribute_getter() -> decltype(std::enable_if_t<is_tuple<TupleType>::value>(), attribute_getter_t<TupleType>()) {
+                return [](const Argument &arg, const std::string& key, TupleType& t) {
+                        constexpr int size = std::tuple_size_v<TupleType>;
+                        if ( !arg.exist(key, size) ){
                                 return false;
+                        } else {
+                                set_tuple_from_array(t, arg, arg.index(key)+1,std::make_index_sequence<std::tuple_size_v<TupleType>>());
+                                return true;
                         }
                 };
         }
+
 /**
  * @brief Attribute getter
  * @tparam T

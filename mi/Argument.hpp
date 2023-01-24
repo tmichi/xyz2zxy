@@ -55,10 +55,10 @@ namespace mi {
                         std::cerr << "invalid argument in Argument::get() " << e.what() << std::endl;
                     }
                     catch (const std::out_of_range& e) {
-                        std::cerr << "out of range in Argument::get() " << e.what() << std::endl;
+                        std::cerr << "out of range at Argument::get() " << e.what() << std::endl;
                     }
                     catch (...) {
-                        std::cerr << "Unknown error." << std::endl;
+                        std::cerr << "Unknown error at Argument::get()." << std::endl;
                     }
              
                         return T();
