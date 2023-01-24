@@ -66,17 +66,16 @@ namespace xyz2zxy {
                         attrSet.printUsage();
                         throw std::runtime_error("Insufficient arguments");
                 }
-
-                params.emplace_back(cv::IMWRITE_TIFF_COMPRESSION);
-                params.emplace_back(1); // no compression
-                if (arg.exist("-p")) {
-                        if (extension == ".tif") {
+                if (extension == ".tif") { //only tif
+                        params.emplace_back(cv::IMWRITE_TIFF_COMPRESSION);
+                        params.emplace_back(1); // no compression
+                        if (arg.exist("-p")) {
                                 // dpi =  25.4 mm / (pitch mm/pixel) (inch)
                                 params.emplace_back(cv::IMWRITE_TIFF_XDPI);
-                                params.emplace_back(std::round(25400 / std::get<0>(pitch)));
+                                params.emplace_back(std::round(25400.0 / std::get<0>(pitch)));
                                 params.emplace_back(cv::IMWRITE_TIFF_YDPI);
-                                params.emplace_back(std::round(25400 / std::get<1>(pitch)));
-                                std::cerr << "dpi: " << params[2] << " x " << params[4] << std::endl;
+                                params.emplace_back(std::round(25400.0 / std::get<1>(pitch)));
+                                std::cerr << "dpi: " << params[3] << " x " << params[5] << std::endl;
                         }
                 }
         }

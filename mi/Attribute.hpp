@@ -20,8 +20,9 @@
 #include <tuple>
 #include "Argument.hpp"
 
-template <typename T, typename... Types>
-std::ostream& operator<<(std::ostream& os, const std::tuple<T, Types...>& myTuple) {
+// << operator for arbitrary tuples with pod
+template <typename T, typename... Ss>
+std::ostream& operator<<(std::ostream& os, const std::tuple<T, Ss...>& myTuple) {
         os << "(";
         std::apply([&os](const auto&... args) {((os << args << ", "), ...);}, myTuple);
         os << "\b\b)";
@@ -32,6 +33,7 @@ namespace mi {
         template<typename T> using attribute_getter_t = std::function<bool(const Argument &arg, const std::string &, T &)>;
         template<typename T> using validator_t = std::function<bool(const T &)>;
 
+        //Tupleの読み込み
         template <typename T, std::size_t... Is>
         void set_tuple_from_array(T& tuple, const Argument& arg, const int idx,  std::index_sequence<Is...>) {
                 std::apply([&arg, &idx](auto&... elems) {
@@ -44,14 +46,14 @@ namespace mi {
         template<typename... Ts> struct is_tuple<std::tuple<Ts...>> : std::true_type {};
 
         // tuple のloader
-        template <typename TupleType>
-        inline auto attribute_getter() -> decltype(std::enable_if_t<is_tuple<TupleType>::value>(), attribute_getter_t<TupleType>()) {
-                return [](const Argument &arg, const std::string& key, TupleType& t) {
-                        constexpr int size = std::tuple_size_v<TupleType>;
+        template <typename T>
+        inline auto attribute_getter() -> decltype(std::enable_if_t<is_tuple<T>::value>(), attribute_getter_t<T>()) {
+                return [](const Argument &arg, const std::string& key, T& t) {
+                        constexpr int size = std::tuple_size_v<T>;
                         if ( !arg.exist(key, size) ){
                                 return false;
                         } else {
-                                set_tuple_from_array(t, arg, arg.index(key)+1,std::make_index_sequence<std::tuple_size_v<TupleType>>());
+                                set_tuple_from_array(t, arg, arg.index(key)+1,std::make_index_sequence<std::tuple_size_v<T>>());
                                 return true;
                         }
                 };
