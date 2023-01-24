@@ -26,6 +26,15 @@
 #include <opencv2/imgcodecs.hpp>
 #include <fmt/core.h>
 
+ template <typename T>
+ void check (cv::Mat& image, const int z) {
+         for (int y = 0 ; y < 256 ; ++y) {
+                 for (int x = 0; x < 256; ++x) {
+                         if (const auto &p = image.at<T>(y, x);  p[0] != x || p[1] != z || p[2] != y)
+                                 throw std::runtime_error("pixel color different");
+                 }
+         }
+ }
 int main (int argc, char** argv) {
         try {
                 if (argc < 2) {
@@ -35,17 +44,15 @@ int main (int argc, char** argv) {
                 std::copy(std::filesystem::directory_iterator(argv[1]), std::filesystem::directory_iterator(), std::back_inserter(paths));
                 std::sort(paths.begin(), paths.end());
                 for (int z = 0 ;z< 256 ; ++z) {
-                        const auto file = fmt::format("{0}/image-{1:05d}.tif", "output", z);
-                        if ( cv::Mat image = cv::imread(file) ; image.empty() ) {
-                                throw std::runtime_error(file + " was empty.");
+                        if ( cv::Mat image = cv::imread(paths[z].string()) ; image.empty() ) {
+                                throw std::runtime_error(paths[z].string()+ " was empty.");
                         } else if (image.size().width != 256 || image.size().height != 256) {
                                 throw std::runtime_error(" Size different.");
                         } else {
-                                for (int y = 0 ; y < 256 ; ++y) {
-                                        for (int x = 0; x < 256; ++x) {
-                                                if (const auto &p = image.at<cv::Vec3b>(y, x);  p[0] != x || p[1] != z || p[2] != y)
-                                                        throw std::runtime_error("pixel color different");
-                                        }
+                                if (image.depth() == 1 ) {
+                                        check<cv::Vec3b>(image, z);
+                                } else if (image.depth() == 2 ) {
+                                        check<cv::Vec3w>(image, z);
                                 }
                         }
                 }

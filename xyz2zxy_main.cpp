@@ -40,20 +40,15 @@ int main(const int argc, const char **argv) {
         try {
                 std::mutex mtx;
                 mi::Argument arg(argc, argv);
-
                 std::filesystem::path input_dir;
                 std::filesystem::path outputDir;
                 int step = 100;
                 std::filesystem::path extension = ".tif";
                 std::vector<int> params;
                 xyz2zxy::init_arguments("xyz2zxy",arg, input_dir, outputDir, step, extension, params);
-
-
-        std::vector<std::filesystem::path> image_paths;
-                std::copy_if(std::filesystem::directory_iterator(input_dir), std::filesystem::directory_iterator(), std::back_inserter(image_paths), [&extension](const auto &f) {
-                                     return !std::filesystem::is_directory(f) &&
-                                            f.path().filename().string().find_first_of(".") != 0 &&
-                                            f.path().extension() == extension;
+                std::vector<std::filesystem::path> image_paths;
+                std::copy_if(std::filesystem::directory_iterator(input_dir), std::filesystem::directory_iterator(), std::back_inserter(image_paths), [](const auto &f) {
+                                     return !std::filesystem::is_directory(f) && f.path().filename().string().find_first_of(".") != 0;
                              }
                 );
                 if (image_paths.empty()) {
@@ -107,7 +102,7 @@ int main(const int argc, const char **argv) {
                                         cv::vconcat(local_images, result);
                                         cv::flip(result, result, 0); // mirroring
                                         cv::rotate(result, result, cv::ROTATE_90_CLOCKWISE);
-                                        xyz2zxy::write_image(outputDir.string() + "/" + fmt::format("image-{:05d}.tif", y), result, params);
+                                        xyz2zxy::write_image(outputDir.string() + "/" + fmt::format("image-{:05d}{}",y,extension.string()), result, params);
                                         xyz2zxy::progress_bar(mtx, num_of_finished.get(), sy, "Step2 concat");
                                 }
                         });
