@@ -17,7 +17,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <fmt/core.h>
+//#include <fmt/core.h>
 
 #include <mi/thread_safe_counter.hpp>
 #include <mi/repeat.hpp>
@@ -32,9 +32,8 @@ namespace xyz2zxy {
         inline auto progress_bar(std::mutex &mtx, const T v, const T max_value, const std::string header = "progress",
                                  const int num_dots = 20) {
                 std::lock_guard<std::mutex> lock(mtx);
-                std::cerr << fmt::format("\r{0}:[{1:-<{2}}] ({4:{3}d}/{5})", header,
-                                         std::string(uint32_t(v * T(num_dots) / max_value), '*'), num_dots,
-                                         std::to_string(max_value).length(), v, max_value);
+                std::cerr << "\033[G" << header << ":[" << std::left << std::setw(num_dots) << std::string(uint32_t(v * T(num_dots) / max_value), '*') << "] (" << v << "/" << max_value << ")" << std::flush;
+                //std::cerr << fmt::format("\r{0}:[{1:-<{2}}] ({4:{3}d}/{5})", header, std::string(uint32_t(v * T(num_dots) / max_value), '*'), num_dots,std::to_string(max_value).length(), v, max_value);
         }
 
         void create_directory(const std::filesystem::path &path) {
@@ -109,7 +108,10 @@ namespace xyz2zxy {
                         const int n = int(cv::imcount(p.string()));
                         for (int i = 0; i < n; ++i) {
                                 cv::imreadmulti(p.string(), images, i, 1, cv::IMREAD_UNCHANGED);
-                                image_paths.push_back(input_dir / fmt::format("image-{:05}.tif", i));
+                                std::stringstream ss;
+                                ss << "image-" << std::setw(5) << std::setfill('0') << i << ".tif";
+                                image_paths.push_back(input_dir / ss.str());
+                                //image_paths.push_back(input_dir / fmt::format("image-{:05}.tif", i));
                                 cv::imwrite(image_paths[i].string(), images[0], params);
                         }
                 } else {
@@ -132,5 +134,6 @@ namespace xyz2zxy {
         void print_peak_memory_size() {
                 std::cout << "peak_memory_size[KB]: " << mi::peak_memory_size() / 1024.0 << std::endl;
         }
+
 }
 #endif //XYZ2ZXY_XYZ2ZXY_HPP
