@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
-PROJECT(xyz2zxy VERSION 2.0.0 LANGUAGES CXX)
+PROJECT(xyz2zxy VERSION 2.0.1 LANGUAGES CXX)
 # BUILD mode
 SET(CMAKE_BUILD_TYPE Release)
 SET(CMAKE_CXX_STANDARD 20) #11, 17
@@ -8,9 +8,7 @@ SET(CMAKE_CXX_EXTENSIONS OFF)
 # Libraries
 IF(MSVC)
     SET(OpenCV_DIR "C:/opencv/build") #directory where OpenCVConfig.cmake exists
-    SET(fmt_DIR "C:/fmt-8.1.1")
 ENDIF(MSVC)
-FIND_PACKAGE(fmt 7.0.0 REQUIRED)
 find_package(OpenCV 4.5.0 REQUIRED)
 find_package(Threads REQUIRED)
 
@@ -44,9 +42,8 @@ endif()
 ## Executables.
 ##
 
-
 INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS} . ${CMAKE_BINARY_DIR})
-LINK_LIBRARIES(${OpenCV_LIBS} fmt::fmt-header-only Threads::Threads)
+LINK_LIBRARIES(${OpenCV_LIBS} Threads::Threads)
 CONFIGURE_FILE(xyz2zxy_version.hpp.in xyz2zxy_version.hpp)
 CONFIGURE_FILE(README.txt.in README.txt)
 ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp)
