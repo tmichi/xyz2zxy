@@ -13,8 +13,7 @@ converts XY cross-sectional images to ZX cross-sectional images.
 
 # Release Notes
 * v.2.0.0 
-  * custom dpi (for tiff images) supported.
-  * xyz2yzx added. Arguments are exactly same as xyz2zxy.
+  * custom dpi (for tiff images) supported.* xyz2yzx added. Arguments are exactly same as xyz2zxy.
   * multi-page tiff input supported.
 
 ## Requirements
