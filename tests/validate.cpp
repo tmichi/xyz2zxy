@@ -24,14 +24,15 @@
 #include <iostream>
 #include <iomanip>
 #include <opencv2/imgcodecs.hpp>
-#include <fmt/core.h>
+
 
  template <typename T>
  void check (cv::Mat& image, const int z) {
          for (int y = 0 ; y < 256 ; ++y) {
                  for (int x = 0; x < 256; ++x) {
-                         if (const auto &p = image.at<T>(y, x);  p[0] != x || p[1] != z || p[2] != y)
+                         if (const auto &p = image.at<T>(y, x);  p[0] != x || p[1] != z || p[2] != y) {
                                  throw std::runtime_error("pixel color different");
+                         }
                  }
          }
  }

@@ -1,18 +1,6 @@
 /** @author Takashi Michikawa <michi@riken.jp>
   */
-//#include "Xyz2ZxyProgram.hpp"
-#include <vector>
-#include <filesystem>
-#include <iostream>
-#include <algorithm>
-#include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
-#include <fmt/core.h>
-#include <mi/thread_safe_counter.hpp>
-#include <mi/repeat.hpp>
-#include <mi/Attribute.hpp>
-#include <xyz2zxy_version.hpp>
-#include "xyz2zxy.hpp"
+#include <xyz2zxy.hpp>
 /**
  * MIT License
  * Copyright (c) 2021 RIKEN
@@ -45,30 +33,21 @@ int main(const int argc, const char **argv) {
                 int step = 100;
                 std::filesystem::path extension = ".tif";
                 std::vector<int> params;
-                xyz2zxy::init_arguments("xyz2zxy",arg, input_dir, outputDir, step, extension, params);
-                std::vector<std::filesystem::path> image_paths;
-                std::copy_if(std::filesystem::directory_iterator(input_dir), std::filesystem::directory_iterator(), std::back_inserter(image_paths), [](const auto &f) {
-                                     return !std::filesystem::is_directory(f) && f.path().filename().string().find_first_of(".") != 0;
-                             }
-                );
-                if (image_paths.empty()) {
-                        throw std::runtime_error("Empty images");
-                }
-                std::sort(image_paths.begin(), image_paths.end());
+                xyz2zxy::init_arguments("xyz2zxy", arg, input_dir, outputDir, step, extension, params);
 
-                xyz2zxy::create_directory(outputDir);
                 std::filesystem::path tmpDir = outputDir.string() + "_temp";
                 xyz2zxy::create_directory(tmpDir);
+
+                std::vector<std::filesystem::path> image_paths = xyz2zxy::list_files(input_dir, tmpDir);
+
+                xyz2zxy::create_directory(outputDir);
                 auto get_tmp_filename = [&tmpDir, &extension](const uint32_t y, const uint32_t z) {
                         return fmt::format("{}/{}/image-{:05d}{}", tmpDir.string(), z, y, extension.string());
                 };
                 // get volume size
-                cv::Mat image = cv::imread(image_paths[0].string(), cv::IMREAD_UNCHANGED);
-                const uint32_t sx = uint32_t(image.size().width);
-                const uint32_t sy = uint32_t(image.size().height);
-                image.release();
-                const uint32_t sz = uint32_t(image_paths.size());
-                
+                uint32_t sx, sy, sz;
+                xyz2zxy::get_volume_size(image_paths, sx, sy, sz);
+
                 std::string step1Str{"Step1 divide"};
                 xyz2zxy::progress_bar(mtx, 0u, sz, step1Str);
                 mi::thread_safe_counter<uint32_t> counter;
@@ -108,6 +87,7 @@ int main(const int argc, const char **argv) {
                         });
                 std::cerr << std::endl;
                 std::filesystem::remove_all(tmpDir);
+                xyz2zxy::print_peak_memory_size();
         } catch (std::runtime_error &e) {
                 std::cerr << e.what() << std::endl;
         } catch (...) {

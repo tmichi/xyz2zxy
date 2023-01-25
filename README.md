@@ -11,14 +11,16 @@ converts XY cross-sectional images to ZX cross-sectional images.
 * This program reduces memory usage by  divide-and-conquer approach (or using HDD for temporary data).
 * This can be used for observation of very large serial-sectioning images in a different axis-aligned cross-section.
 
-# Release Note
+# Release Notes
 * v.2.0.0 
   * custom dpi (for tiff images) supported.
   * xyz2yzx added. Arguments are exactly same as xyz2zxy.
+  * multi-page tiff input supported.
 
 ## Requirements
+
 * CMake (> v.3.10.*)
-* C++17 or later (filesystem)
+* C++17
 * OpenCV (> v.4.5.0)
 * fmt (https://fmt.dev) (v.8.0.1 or later)  
 
@@ -31,7 +33,9 @@ converts XY cross-sectional images to ZX cross-sectional images.
 % make  
 %
 ```
+
 ### Validation
+
 ```bash
 % ./make_sample 
 % ./xyz2zxy -i sample -o output -n 4
@@ -41,23 +45,31 @@ Step2 concat:[********************] (256/256)
 validation ok
 %
 ```
-* ``make check`` creates sasmple data and validates the computation result. 
+
+* ``make check`` creates sasmple data and validates the computation result.
+
 ### Windows (Visual Studio )
+
 * Use CMake to create the solution file.
 * Set CMAKE_PREFIX_PATH to OpenCV and fmt in order to call find_package().
-### Other systems. 
-* See CMakeLists.txt
+
+### Other systems.
+
+* Not supported.
+
 ## Usage
-* ``xyz2zxy -i {input_dir} -o {output_dir} ( -n {n} -p {px} {py} -e {ext} ``
-* ``xyz2yzx -i {input_dir} -o {output_dir} ( -n {n} -p {px} {py} -e {ext} ``
 
+* ``xyz2zxy -i {input_dir|mtif} -o {output_dir} ( -n {n} -p {px} {py} -e {ext} ``
+* ``xyz2yzx -i {input_dir|mtif} -o {output_dir} ( -n {n} -p {px} {py} -e {ext} ``
   * ``{input_dir}`` : the directory where images are contained.
+  * ``{mtif}`` : multi-page tiff.
   * ``{output_dir}`` : the directory where converted images are saved.
-  * ``{n}`` : the number of images that are loaded in the memory (Default : 100). Larger n computes faster, but requires large memory size.
+  * ``{n}`` : the number of images that are loaded in the memory (Default : 100). Larger n computes faster, but requires
+    large memory size.
   * ``{px} {py}`` : pixel resolution [mm]. Available only for TIF format.
-  * ``{ext}``: Extension of the files (e.g., ".tif")
+  * ``{ext}``: Extension of the files (e.g., ".tif").
 
-*  ``make_sample, validate`` : executables for validation.
+* ``make_sample, make_sample16, make_sample_mtif, validate, validate_yzx`` : executables for validation.
 ## License 
 * MIT License
 ## Author

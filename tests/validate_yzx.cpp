@@ -26,7 +26,6 @@
 #include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
-#include <fmt/core.h>
 int main (int argc, char** argv) {
         try {
                 if (argc < 2) {

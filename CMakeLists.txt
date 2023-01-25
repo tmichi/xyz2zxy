@@ -8,6 +8,7 @@ SET(CMAKE_CXX_EXTENSIONS OFF)
 # Libraries
 IF(MSVC)
     SET(OpenCV_DIR "C:/opencv/build") #directory where OpenCVConfig.cmake exists
+    SET(fmt_DIR "C:/fmt-8.1.1")
 ENDIF(MSVC)
 FIND_PACKAGE(fmt 7.0.0 REQUIRED)
 find_package(OpenCV 4.5.0 REQUIRED)
@@ -52,27 +53,6 @@ ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp)
 ADD_EXECUTABLE(xyz2yzx xyz2yzx_main.cpp xyz2zxy.hpp)
 ADD_SUBDIRECTORY(tests)
 
-ADD_CUSTOM_TARGET(check
-        DEPENDS check8 check16 check_custom_pitch
-        )
-ADD_CUSTOM_TARGET(check8
-        COMMAND make_sample
-        COMMAND xyz2zxy -i sample -o output_zxy -n 4 -ext ".png"
-        COMMAND validate output_zxy
-        COMMAND xyz2yzx -i sample -o output_yzx -n 8 -p 10 20 -ext ".tif"
-        COMMAND validate_yzx output_yzx
-        DEPENDS make_sample xyz2zxy validate
-        )
-ADD_CUSTOM_TARGET(check16
-        COMMAND make_sample16
-        COMMAND xyz2zxy -i sample16 -o output16 -n 8 -ext ".png"
-        COMMAND validate output16
-        DEPENDS xyz2zxy make_sample16 validate
-        )
-ADD_CUSTOM_TARGET(check_custom_pitch
-        COMMAND make_sample
-        COMMAND xyz2zxy -i sample -o output_cp -n 4 -pitch 1 3 -ext ".tif"
-        )
 #
 # Archiving by CPack
 #
@@ -80,6 +60,6 @@ INSTALL(TARGETS xyz2zxy xyz2yzx RUNTIME DESTINATION bin) #プログラム
 INSTALL(FILES ${CMAKE_BINARY_DIR}/README.txt DESTINATION .)
 SET(CPACK_SOURCE_IGNORE_FILES cmake-*;build;.git*;.DS_Store;.idea)
 set(CPACK_GENERATOR "ZIP")
-set(CPACK_SOURCE_GENERATOR TGZ)
+set(CPACK_SOURCE_GENERATOR "ZIP")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME ${CMAKE_PROJECT_NAME}-${CMAKE_PROJECT_VERSION})
 include(CPack)
