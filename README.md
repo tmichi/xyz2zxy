@@ -12,8 +12,9 @@ converts XY cross-sectional images to ZX cross-sectional images.
 * This can be used for observation of very large serial-sectioning images in a different axis-aligned cross-section.
 
 # Release Notes
-* v.2.0.0 
-  * custom dpi (for tiff images) supported.* xyz2yzx added. Arguments are exactly same as xyz2zxy.
+* v.2.0.0
+  * custom dpi (for tiff images) supported.
+  * xyz2yzx added. Arguments are exactly same as xyz2zxy.
   * multi-page tiff input supported.
 
 ## Requirements
