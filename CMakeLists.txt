@@ -42,11 +42,12 @@ endif()
 ## Executables.
 ##
 
-INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS} . ${CMAKE_BINARY_DIR})
+#INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS} . ${CMAKE_BINARY_DIR})
+INCLUDE_DIRECTORIES(. ${CMAKE_BINARY_DIR})
 LINK_LIBRARIES(${OpenCV_LIBS} Threads::Threads)
 CONFIGURE_FILE(xyz2zxy_version.hpp.in xyz2zxy_version.hpp)
 CONFIGURE_FILE(README.txt.in README.txt)
-ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp)
+ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp xyz2zxy.hpp)
 ADD_EXECUTABLE(xyz2yzx xyz2yzx_main.cpp xyz2zxy.hpp)
 ADD_SUBDIRECTORY(tests)
 
