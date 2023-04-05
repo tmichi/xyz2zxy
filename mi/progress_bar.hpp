@@ -1,10 +1,7 @@
-/**
- * @file progress_bar.hpp
- * @author Takashi Michikawa <tmichi@me.com>
- * @copyright (c) 2021 -  Takashi Michikawa
- * Released under the MIT license
- * https://opensource.org/licenses/mit-license.php
- */
+//
+// Created by Takashi Michikawa on 2021/08/13.
+//
+
 #ifndef MI_PROGRESS_BAR_HPP
 #define MI_PROGRESS_BAR_HPP 1
 
@@ -13,31 +10,36 @@
 #include <string>
 #include <type_traits>
 #include <iostream>
-//#include <fmt/core.h>
-
-#if defined (WIN32) || defined (_WIN64)
-#include <windows.h>
-#include <io.h>
-#endif
+#include <iomanip>
+#include <concepts>
 namespace mi{
-        template <typename T>
-        inline auto progress_bar(const T v, const T vmax, const std::string header = "progress", const int ndots = 20) -> decltype(std::enable_if_t<std::is_arithmetic_v<T>, T>(), void()) {
-#if defined (WIN32) || defined (_WIN64)
-            DWORD mode = 0;
-            if (HANDLE handle = (HANDLE)_get_osfhandle(_fileno(stderr)); !GetConsoleMode(handle, &mode)) {
-            }
-            else if (!SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
-            }
-            #endif
-            //std::cerr << fmt::format("\033[G{0}:[{1:-<{2}}] ({4:{3}d}/{5})", header, std::string(uint32_t(v * T(ndots) / vmax), '*'), ndots, int(std::log10(vmax)) + 1, v, vmax);
-            std::cerr << "\033[G" << header << ":[" << std::left<<std::setw(ndots) << std::string(uint32_t(std::round(v * T(ndots) / vmax)), '*') << "] (" << v << "/" << vmax << ")"<<std::flush;
+        template <std::integral T>
+        inline void progress_bar(const T v, const T vmax, const std::string header = "progress", const std::string::size_type ndots = 20) {
+                std::cerr << "\r" << header << ":[" << std::setw(ndots) << std::setfill('-') << std::left << std::string(v * ndots / vmax, '*') << "] "<<"(" << std::setw(std::to_string(vmax).length())<<std::setfill(' ') <<std::right<< v << "/" << vmax << ")";
         }
-
-        // thread safe version
-        template <typename T>
-        inline auto progress_bar(std::mutex& mtx, const T v, const T max_value, const std::string header = "progress", const int ndots = 20) {
+        template <std::integral T>
+        inline void progress_bar(std::mutex& mtx, const T v, const T max_value, const std::string header = "progress", const int ndots = 20) {
                 std::lock_guard<std::mutex> lock(mtx);
                 mi::progress_bar(v, max_value, header, ndots);
         }
-}
+        
+        template <std::integral T>
+        class ProgressBar {
+        private:
+                T max_value_;
+                std::string header_;
+                int ndots_;
+                std::mutex mtx_;
+        public:
+                explicit ProgressBar (const T max_value, const std::string header = "progress", const int ndots = 20) : max_value_(max_value), header_(header), ndots_(ndots) {
+                        this->print(T());
+                }
+                ~ProgressBar() {
+                        std::cerr<<std::endl;
+                };
+                void print (const T value) {
+                        mi::progress_bar(this->mtx_, value, this->max_value_, this->header_, this->ndots_);
+                }
+        };
+};
 #endif //MI_PROGRESS_BAR_HPP

@@ -12,8 +12,6 @@
 
 #include <mutex>
 #include <stdexcept>
-#include <limits>
-#include <string>
 #include <cstdint>
 namespace mi {
         template<typename T = int32_t>
@@ -21,13 +19,12 @@ namespace mi {
         private:
                 T n_; ///< counter
                 std::mutex mtx_;
-                bool is_valid_;
         public:
                 /**
                  * @brief Constructor.
                  * @param s Init value.
                  */
-                explicit thread_safe_counter(const T s = T()) : n_(s), is_valid_(true) {}
+                explicit thread_safe_counter(const T s = T()) : n_(s) {}
 
                 thread_safe_counter(const thread_safe_counter &d) = delete;
 
@@ -38,29 +35,17 @@ namespace mi {
                 thread_safe_counter &&operator=(thread_safe_counter &&d) = delete;
 
                 ~thread_safe_counter() = default;
-
-                /**
-                 * @brief
-                 * @throw runtime_error if value reaches max.
-                 * @return Value
-                 * @note can get value less than std:numeric_limits<T>::max()
-                 */
-                const T get() {
-                        if (std::lock_guard<std::mutex> lock(this->mtx_); this->is_valid_) {
-                                this->is_valid_ = (this->n_ < std::numeric_limits<T>::max());
-                                return this->n_++;
-                        } else {
-                                throw std::overflow_error("thread_safe_counter::get() exceeds " + std::to_string(std::numeric_limits<T>::max()));
+  
+                T get() {
+                        std::lock_guard <std::mutex> lock(this->mtx_);
+                        if ( this->n_ == std::numeric_limits<T>::max() ) {
+                                throw std::runtime_error("mi::thread_safe_counter<T>::get() : max value");
                         }
+                        return this->n_++;
                 }
-
-                /**
-                 * @brief Reset counter.
-                 * @param s reset value.
-                 */
+                
                 void reset(const T s = T()) {
                         this->n_ = s;
-                        this->is_valid_ = true;
                 }
         };
 }

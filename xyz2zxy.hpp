@@ -5,6 +5,7 @@
 #ifndef XYZ2ZXY_XYZ2ZXY_HPP
 #define XYZ2ZXY_XYZ2ZXY_HPP
 
+#include <mi/stream.hpp>
 #include <algorithm>
 #include <filesystem>
 #include <iostream>

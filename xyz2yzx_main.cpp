@@ -22,7 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-int main(const int argc, const char **argv) {
+int main(int argc, char **argv) {
         try {
                 std::mutex mtx;
                 mi::Argument arg(argc, argv);
