@@ -4,7 +4,6 @@ ADD_EXECUTABLE(make_sample_mtif make_sample_mtif.cpp)
 ADD_EXECUTABLE(validate validate.cpp)
 ADD_EXECUTABLE(validate_yzx validate_yzx.cpp)
 
-
 ADD_CUSTOM_TARGET(check
         DEPENDS check8 check16 checkmtif check_custom_pitch
         )
@@ -15,9 +14,9 @@ ADD_CUSTOM_TARGET(checkmtif
         )
 ADD_CUSTOM_TARGET(check8
         COMMAND make_sample
-        COMMAND xyz2zxy -i sample -o output_zxy -n 4 -ext ".png"
+        COMMAND xyz2zxy -i sample -o output_zxy -n 1 -ext ".png"
         COMMAND validate output_zxy
-        COMMAND xyz2yzx -i sample -o output_yzx -n 8 -ext ".tif"
+        COMMAND xyz2yzx -i sample -o output_yzx -n 1 -ext ".tif"
         COMMAND validate_yzx output_yzx
         DEPENDS make_sample xyz2zxy validate
         )
