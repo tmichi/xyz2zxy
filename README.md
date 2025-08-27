@@ -1,81 +1,102 @@
 # xyz2zxy
 
-converts XY cross-sectional images to ZX cross-sectional images.
+Convert XY cross-sectional images into ZX cross-sectional images.
 
-![Teaser image of xyz2zxy](xyz2zxy_teaser.png "Example of the result.")
-
+![Teaser image of xyz2zxy](xyz2zxy_teaser.png "Example result")
 
 ## Overview
-* This program converts 3D images defined by XY corss-sectional images to different cross-sectional images (ZX).
-* Such images are easy to convert by reading all images at once, however it requires huge memory usage. 
-* This program reduces memory usage by  divide-and-conquer approach (or using HDD for temporary data).
-* This can be used for observation of very large serial-sectioning images in a different axis-aligned cross-section.
 
-# Release Notes
-* v.2.0.0
-  * custom dpi (for tiff images) supported.
-  * xyz2yzx added. Arguments are exactly same as xyz2zxy.
-  * multi-page tiff input supported.
+-   This program converts 3D images represented by XY cross-sectional
+    slices into ZX cross-sections.
+-   A straightforward conversion would require loading all images into
+    memory, which is impractical for very large datasets.
+-   To address this, the program uses a **divide-and-conquer approach**
+    (or optionally, temporary storage on HDD) to significantly reduce
+    memory usage.
+-   This is particularly useful for visualizing very large
+    serial-sectioning images along different axis-aligned
+    cross-sections.
+
+## Release Notes
+
+-   v2.0.0
+    -   Added support for custom DPI in TIFF images.
+    -   Added `xyz2yzx` (same arguments as `xyz2zxy`).
+    -   Added support for multi-page TIFF input.
 
 ## Requirements
 
-* CMake (> v.3.10.*)
-* C++17
-* OpenCV (> v.4.5.0)
-* fmt (https://fmt.dev) (v.8.0.1 or later)  
+-   CMake (≥ 3.10)
+-   C++17
+-   OpenCV (≥ 4.5.0)
+-   [fmt](https://fmt.dev) (≥ 8.0.1)
 
-## Build and Test 
-### Unix-like System with CMake 
-```bash
-% mkdir build
-% cd build
-% cmake ..
-% make  
-%
+## Build and Test
+
+### Unix-like systems with CMake
+
+``` bash
+mkdir build
+cd build
+cmake ..
+make
 ```
 
 ### Validation
 
-```bash
-% ./make_sample 
-% ./xyz2zxy -i sample -o output -n 4
+``` bash
+./make_sample 
+./xyz2zxy -i sample -o output -n 4
 Step1 divide:[********************] (256/256)
 Step2 concat:[********************] (256/256)
-% ./validate output
+./validate output
 validation ok
-%
 ```
 
-* ``make check`` creates sasmple data and validates the computation result.
+-   `make check` creates sample data and validates the results.
 
-### Windows (Visual Studio )
+### Windows (Visual Studio)
 
-* Use CMake to create the solution file.
-* Set CMAKE_PREFIX_PATH to OpenCV and fmt in order to call find_package().
+-   Use CMake to generate the solution file.
+-   Set `CMAKE_PREFIX_PATH` to the installation directories of OpenCV
+    and fmt so that `find_package()` can locate them.
 
-### Other systems.
+### Other systems
 
-* Not supported.
+-   Not supported.
 
 ## Usage
 
-* ``xyz2zxy -i {input_dir|mtif} -o {output_dir} ( -n {n} -p {px} {py} -e {ext} ``
-* ``xyz2yzx -i {input_dir|mtif} -o {output_dir} ( -n {n} -p {px} {py} -e {ext} ``
-  * ``{input_dir}`` : the directory where images are contained.
-  * ``{mtif}`` : multi-page tiff.
-  * ``{output_dir}`` : the directory where converted images are saved.
-  * ``{n}`` : the number of images that are loaded in the memory (Default : 100). Larger n computes faster, but requires
-    large memory size.
-  * ``{px} {py}`` : pixel resolution [mm]. Available only for TIF format.
-  * ``{ext}``: Extension of the files (e.g., ".tif").
+    xyz2zxy -i {input_dir|mtif} -o {output_dir} ( -n {n} -p {px} {py} -e {ext} )
+    xyz2yzx -i {input_dir|mtif} -o {output_dir} ( -n {n} -p {px} {py} -e {ext} )
 
-* ``make_sample, make_sample16, make_sample_mtif, validate, validate_yzx`` : executables for validation.
-## License 
-* MIT License
+-   **`{input_dir}`** : Directory containing the input images.
+-   **`{mtif}`** : Multi-page TIFF file.
+-   **`{output_dir}`** : Directory where converted images will be
+    saved.
+-   **`{n}`** : Number of images to load into memory at once (default:
+    100). Larger values improve speed but require more memory.
+-   **`{px} {py}`** : Pixel resolution \[mm\]. Available only for TIFF
+    format.
+-   **`{ext}`** : File extension of the input (e.g., `.tif`).
+
+Additional executables for validation:
+`make_sample`, `make_sample16`, `make_sample_mtif`, `validate`,
+`validate_yzx`
+
+## License
+
+-   MIT License
+
 ## Author
-* Takashi Michikawa <ram-axed-0b@icloud.com>, Image Processing Research Team, RIKEN Center for Advanced Photonics.
-## Copyrights 
-* Main codes : (c)2021 - now RIKEN
-* mi/*.hpp : (c)2007 - now Takashi Michikawa
+
+-   Takashi Michikawa (<ram-axed-0b@icloud.com>), Image Processing
+    Research Team, RIKEN Center for Advanced Photonics
+
+## Copyright
+
+-   Main code : © 2021--present RIKEN
+-   `mi/*.hpp` : © 2007--present Takashi Michikawa
+
 ## Acknowlegments
 * This work was supported by Council for Science, Technology and Innovation(CSTI), Cross-ministerial Strategic Innovation Promotion Program (SIP), “Materials Integration for revolutionary design system of structural materials”(Funding agency:JST).
