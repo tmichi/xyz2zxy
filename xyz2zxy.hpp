@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <iostream>
 #include <mutex>
+#include <locale>
 #include <string>
 #include <sstream>
 #include <thread>
@@ -16,15 +17,12 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
-
-//#include <fmt/core.h>
-
 #include <mi/thread_safe_counter.hpp>
 #include <mi/repeat.hpp>
 #include <mi/Attribute.hpp>
 #include <mi/peak_memory_size.hpp>
-
 #include <xyz2zxy_version.hpp>
+#include <set>
 
 namespace xyz2zxy {
 
@@ -71,12 +69,17 @@ namespace xyz2zxy {
                 attrSet.createAttribute("-ext", extension).setMessage(
                         "Extension of the images (e.g., .tif, .png. Default : .tif)");
                 attrSet.createAttribute("-p", pitch).setMessage("Pixel resolution").setValidator([](const std::tuple<double, double>& v){ return std::get<0>(v)>0 && std::get<1>(v)>0;});
-
+                bool verbose = false;
+                attrSet.createAttribute("--verbose", verbose).setMessage("Verbose mode.");
                 if (!attrSet.parse(arg)) {
                         std::cerr << cmd << " version. " << XYZ2ZXY_VERSION << std::endl;
                         std::cerr << "Usage :" << std::endl;
                         attrSet.printUsage();
                         throw std::runtime_error("Insufficient arguments");
+                }
+                if (verbose)
+                {
+                        attrSet.printValues(std::cerr);
                 }
                 if (extension == ".tif") { //only tif
                         params.emplace_back(cv::IMWRITE_TIFF_COMPRESSION);
@@ -92,17 +95,22 @@ namespace xyz2zxy {
         }
 
 
-        std::vector<std::filesystem::path> list_files(const std::filesystem::path &p, const std::filesystem::path &tmp) {
+        std::vector<std::filesystem::path> list_files(const std::filesystem::path &p, const std::filesystem::path &tmp,const std::filesystem::path &extension) {
                 std::vector<std::filesystem::path> image_paths;
-                if (std::filesystem::is_directory(p)) {
-                        std::copy_if(std::filesystem::directory_iterator(p), std::filesystem::directory_iterator(), std::back_inserter(image_paths), [](const auto &f) {
-                                             return !std::filesystem::is_directory(f) && f.path().filename().string().find_first_of(".") != 0;
+                std::set<std::filesystem::path> invalid_files {std::filesystem::path{"Thumbs.db"}, std::filesystem::path{"desktop.ini"}};
+                if (std::filesystem::is_directory(p)) { //Directory
+                        std::copy_if(std::filesystem::directory_iterator(p),
+                                     std::filesystem::directory_iterator(),
+                                     std::back_inserter(image_paths),
+                                     [&invalid_files, &extension](const auto &f) {
+                                             auto p = f.path();
+                                             auto fn = p.filename();
+                                             return !std::filesystem::is_directory(f) && fn.string().front() != '.' && !invalid_files.contains(fn) && p.extension() == extension;
                                      }
                         );
-                } else if (p.extension() == ".tif" || p.extension() == ".tiff") {
+                } else if (p.extension() == ".tif" || p.extension() == ".tiff") { //multipage tif.
                         auto input_dir = tmp / "input";
                         xyz2zxy::create_directory(input_dir);
-
                         std::vector<int> params = {cv::IMWRITE_TIFF_COMPRESSION, 1};
                         std::vector<cv::Mat> images;
                         const int n = int(cv::imcount(p.string()));
@@ -111,7 +119,6 @@ namespace xyz2zxy {
                                 std::stringstream ss;
                                 ss << "image-" << std::setw(5) << std::setfill('0') << i << ".tif";
                                 image_paths.push_back(input_dir / ss.str());
-                                //image_paths.push_back(input_dir / fmt::format("image-{:05}.tif", i));
                                 cv::imwrite(image_paths[i].string(), images[0], params);
                         }
                 } else {
@@ -132,7 +139,7 @@ namespace xyz2zxy {
         }
 
         void print_peak_memory_size() {
-                std::cout << "peak_memory_size[KB]: " << mi::peak_memory_size() / 1024.0 << std::endl;
+                std::cout << "peak_memory_size[MB]: " << mi::peak_memory_size() / 1024.0 / 1024.0<< std::endl;
         }
 
 }

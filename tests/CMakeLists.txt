@@ -6,8 +6,12 @@ ADD_EXECUTABLE(validate_yzx validate_yzx.cpp)
 
 
 ADD_CUSTOM_TARGET(check
-        DEPENDS check8 check16 checkmtif check_custom_pitch
+                DEPENDS check8 check16 checkmtif check_custom_pitch check_verbose
         )
+ADD_CUSTOM_TARGET(check_verbose
+        COMMAND make_sample
+        COMMAND xyz2zxy -i sample -o output_zxy -n 4 -ext ".png" --verbose
+)
 ADD_CUSTOM_TARGET(checkmtif
         COMMAND make_sample_mtif
         COMMAND xyz2zxy -i mtifsample.tif -o output_zxy -n 4 -ext ".png"
