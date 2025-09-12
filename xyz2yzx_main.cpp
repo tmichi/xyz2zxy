@@ -35,7 +35,7 @@ int main(const int argc, const char **argv) {
 
                 std::filesystem::path tmpDir = outputDir.string() + "_temp";
                 xyz2zxy::create_directory(tmpDir);
-                std::vector<std::filesystem::path> image_paths = xyz2zxy::list_files(input_dir, tmpDir);
+                std::vector<std::filesystem::path> image_paths = xyz2zxy::list_files(input_dir, tmpDir, extension);
 
                 xyz2zxy::create_directory(outputDir);
 
