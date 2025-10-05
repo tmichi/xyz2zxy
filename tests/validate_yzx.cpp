@@ -34,7 +34,6 @@ int main (int argc, char** argv) {
                 std::vector<std::filesystem::path> paths;
                 std::copy(std::filesystem::directory_iterator(argv[1]), std::filesystem::directory_iterator(), std::back_inserter(paths));
                 std::sort(paths.begin(), paths.end());
-        
                 for (int z = 0 ; z < 256 ; ++z) {
                         if ( cv::Mat image = cv::imread(paths[z].string()) ; image.empty() ) {
                                 throw std::runtime_error(paths[std::round_toward_zero].string() + " was empty.");
@@ -56,6 +55,6 @@ int main (int argc, char** argv) {
                 std::cerr<<e.what()<<std::endl;
                 return -1;
         }
-        std::cerr<<"validation ok"<<std::endl;
+        std::cerr<<"yzx validation ok"<<std::endl;
         return 0;
 }

@@ -11,7 +11,7 @@
 #include <mutex>
 #include <locale>
 #include <string>
-#include <sstream>
+#include <set>
 #include <thread>
 #include <vector>
 #include <opencv2/core.hpp>
@@ -22,7 +22,7 @@
 #include <mi/Attribute.hpp>
 #include <mi/peak_memory_size.hpp>
 #include <xyz2zxy_version.hpp>
-#include <set>
+
 
 namespace xyz2zxy {
 
@@ -130,12 +130,22 @@ namespace xyz2zxy {
                 std::sort(image_paths.begin(), image_paths.end());
                 return image_paths;
         }
-
+/*
         void get_volume_size(std::vector<std::filesystem::path> &image_paths, uint32_t &sx, uint32_t &sy, uint32_t &sz) {
                 cv::Mat image = cv::imread(image_paths[0].string(), cv::IMREAD_UNCHANGED);
                 sx = uint32_t(image.size().width);
                 sy = uint32_t(image.size().height);
                 sz = uint32_t(image_paths.size());
+        }
+*/
+        std::tuple<uint32_t, uint32_t, uint32_t> get_volume_size(const std::vector<std::filesystem::path> &image_paths) {
+                if (image_paths.empty()) {
+                      throw std::runtime_error("Empty images");
+                }
+                cv::Mat image = cv::imread(image_paths[0].string(), cv::IMREAD_UNCHANGED);
+                return std::make_tuple(static_cast<uint32_t>(image.size().width),
+                                       static_cast<uint32_t>(image.size().height),
+                                       static_cast<uint32_t>(image_paths.size()));
         }
 
         void print_peak_memory_size() {

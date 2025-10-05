@@ -31,6 +31,7 @@ int main(const int argc, const char **argv) {
                 int step = 100;
                 std::filesystem::path extension = ".tif";
                 std::vector<int> params;
+
                 xyz2zxy::init_arguments("xyz2yzx", arg, input_dir, outputDir, step, extension, params);
 
                 std::filesystem::path tmpDir = outputDir.string() + "_temp";
@@ -40,14 +41,10 @@ int main(const int argc, const char **argv) {
                 xyz2zxy::create_directory(outputDir);
 
                 auto get_tmp_filename = [&tmpDir, &extension](const uint32_t y, const uint32_t z) {
-                        std::stringstream ss;
-                        ss << tmpDir.string() << "/" << z << "/" << "image-" << std::setw(5) << std::setfill('0') << y << extension.string();
-                        return ss.str();
-                        //        return fmt::format("{}/{}/image-{:05d}{}", tmpDir.string(), z, y, extension.string());
+                        return std::format("{}/{}/image-{:05d}{}", tmpDir.string(), z, y, extension.string());
                 };
 
-                uint32_t sx, sy, sz;
-                xyz2zxy::get_volume_size(image_paths, sx, sy, sz);
+                auto [sx, sy, sz] = xyz2zxy::get_volume_size(image_paths);
 
                 std::string step1Str{"Step1 divide"};
                 xyz2zxy::progress_bar(mtx, 0u, sz, step1Str);
@@ -84,10 +81,8 @@ int main(const int argc, const char **argv) {
                                         cv::hconcat(local_images, result);
                                         cv::flip(result, result, 0); // mirroring
                                         cv::rotate(result, result, cv::ROTATE_90_CLOCKWISE);
-                                        // xyz2zxy::write_image(outputDir.string() + "/" + fmt::format("image-{:05d}.tif", x), result,params);
-                                        std::stringstream ss;
-                                        ss << outputDir.string() << "/" << "image-" << std::setw(5) << std::setfill('0') << x << extension.string();
-                                        xyz2zxy::write_image(ss.str(), result, params);
+                                        const std::filesystem::path outputFile = outputDir / std::format("image-{:05d}{}", x, extension.string());
+                                        xyz2zxy::write_image(outputFile.string(), result, params);
                                         xyz2zxy::progress_bar(mtx, num_of_finished.get(), sx, "Step2 concat");
                                 }
                         });
@@ -97,7 +92,7 @@ int main(const int argc, const char **argv) {
         } catch (std::runtime_error &e) {
                 std::cerr << e.what() << std::endl;
         } catch (...) {
-                std::cerr << "Unknown error" << std::endl;
+                std::cerr << "Unknown error." << std::endl;
         }
         return EXIT_SUCCESS;
 }
