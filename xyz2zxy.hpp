@@ -84,12 +84,15 @@ namespace xyz2zxy {
                 if (extension == ".tif") { //only tif
                         params.emplace_back(cv::IMWRITE_TIFF_COMPRESSION);
                         params.emplace_back(1); // no compression
+                        auto pitch2dpi = [] (const double p) {
+                                return std::round(25400.0 / p);
+                        };
                         if (arg.exist("-p")) {
                                 // dpi =  25.4 mm / (pitch mm/pixel) (inch)
                                 params.emplace_back(cv::IMWRITE_TIFF_XDPI);
-                                params.emplace_back(std::round(25400.0 / std::get<0>(pitch)));
+                                params.emplace_back(pitch2dpi(std::get<0>(pitch));
                                 params.emplace_back(cv::IMWRITE_TIFF_YDPI);
-                                params.emplace_back(std::round(25400.0 / std::get<1>(pitch)));
+                                params.emplace_back(pitch2dpi(std::get<1>(pitch));
                         }
                 }
         }

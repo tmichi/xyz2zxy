@@ -14,6 +14,7 @@ IF(MSVC)
 ENDIF(MSVC)
 find_package(OpenCV 4.5.0 REQUIRED)
 find_package(Threads REQUIRED)
+find_package(TIFF)
 
 if (APPLE)
     if (CMAKE_OSX_ARCHITECTURES STREQUAL "x86_64")
@@ -52,7 +53,9 @@ CONFIGURE_FILE(README.txt.in README.txt)
 ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp)
 ADD_EXECUTABLE(xyz2yzx xyz2yzx_main.cpp xyz2zxy.hpp)
 ADD_SUBDIRECTORY(tests)
-
+IF(TIFF_FOUND)
+ADD_SUBDIRECTORY(libtiff)
+ENDIF()
 #
 # Archiving by CPack
 #
