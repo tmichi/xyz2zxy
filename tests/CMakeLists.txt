@@ -35,3 +35,35 @@ ADD_CUSTOM_TARGET(check_custom_pitch
         COMMAND make_sample
         COMMAND xyz2zxy -i sample -o output_cp -n 4 -p 1 3 -ext ".png"
         )
+
+if(BUILD_TESTING)
+    add_executable(buffer_regression buffer_regression.cpp)
+    set(regression_dir "${CMAKE_CURRENT_BINARY_DIR}/regression")
+    add_test(NAME buffers_prepare COMMAND buffer_regression prepare "${regression_dir}")
+    set_tests_properties(buffers_prepare PROPERTIES FIXTURES_SETUP image_buffers)
+    # Cover 8/16 bit, one/three/four channels.
+    foreach(type 8UC1 8UC3 8UC4 16UC1 16UC3 16UC4)
+        foreach(ext png tif)
+            foreach(step 1 3 20)
+                foreach(axis zxy yzx)
+                    set(name "buffers_${type}_${ext}_${step}_${axis}")
+                    set(output "${regression_dir}/${name}.${ext}")
+                    add_test(NAME ${name} COMMAND xyz2${axis}
+                        -i "${regression_dir}/${type}.${ext}" -o "${output}" -n ${step} -ext ".${ext}")
+                    set_tests_properties(${name} PROPERTIES FIXTURES_REQUIRED image_buffers)
+                    add_test(NAME ${name}_verify COMMAND buffer_regression verify "${output}" ${type} ${axis})
+                    set_tests_properties(${name}_verify PROPERTIES DEPENDS ${name} FIXTURES_REQUIRED image_buffers)
+                endforeach()
+            endforeach()
+        endforeach()
+        foreach(axis zxy yzx)
+            set(name "buffers_mtif_${type}_${axis}")
+            set(output "${regression_dir}/${name}.tif")
+            add_test(NAME ${name} COMMAND xyz2${axis}
+                -i "${regression_dir}/${type}.tifstack/input.tif" -o "${output}" -n 3 -ext .tif)
+            set_tests_properties(${name} PROPERTIES FIXTURES_REQUIRED image_buffers)
+            add_test(NAME ${name}_verify COMMAND buffer_regression verify "${output}" ${type} ${axis})
+            set_tests_properties(${name}_verify PROPERTIES DEPENDS ${name} FIXTURES_REQUIRED image_buffers)
+        endforeach()
+    endforeach()
+endif()

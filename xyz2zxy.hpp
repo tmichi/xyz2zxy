@@ -7,6 +7,8 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <fstream>
+#include <format>
 #include <iostream>
 #include <mutex>
 #include <locale>
@@ -16,7 +18,7 @@
 #include <vector>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 #include <mi/thread_safe_counter.hpp>
 #include <mi/repeat.hpp>
 #include <mi/Attribute.hpp>
@@ -39,6 +41,31 @@ namespace xyz2zxy {
                 if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path)) {
                         throw std::runtime_error(path.string() + " cannot be created.");
                 }
+        }
+
+        // imdecode's destination overload is available on OpenCV 4.5 as well.
+        // Keep both the encoded storage and decoded pixels across same-size reads.
+        void read_image(const std::string &filename, cv::Mat &image,
+                        std::vector<uchar> &encoded, const int flags) {
+                std::ifstream input(filename, std::ios::binary | std::ios::ate);
+                const auto size = input.tellg();
+                if (!input || size <= 0) {
+                        throw std::runtime_error("Cannot read image: " + filename);
+                }
+                encoded.resize(static_cast<size_t>(size));
+                input.seekg(0);
+                if (!input.read(reinterpret_cast<char *>(encoded.data()), size)) {
+                        throw std::runtime_error("Cannot read image: " + filename);
+                }
+                cv::Mat decoded = cv::imdecode(encoded, flags, &image);
+                if (decoded.empty()) {
+                        throw std::runtime_error("Cannot decode image: " + filename);
+                }
+                image = decoded;
+        }
+
+        unsigned worker_count(const uint32_t jobs) {
+                return std::min(jobs, std::max(1u, std::thread::hardware_concurrency()));
         }
 
         bool write_image(const std::string &filename, const cv::Mat &image, std::vector<int> &params) {
@@ -115,7 +142,11 @@ namespace xyz2zxy {
                         std::vector<cv::Mat> images;
                         const int n = int(cv::imcount(p.string()));
                         for (int i = 0; i < n; ++i) {
-                                cv::imreadmulti(p.string(), images, i, 1, cv::IMREAD_UNCHANGED);
+                                // imreadmulti appends to the vector; release the previous page.
+                                images.clear();
+                                if (!cv::imreadmulti(p.string(), images, i, 1, cv::IMREAD_UNCHANGED) || images.size() != 1) {
+                                        throw std::runtime_error("Cannot read TIFF page: " + std::to_string(i));
+                                }
                                 std::stringstream ss;
                                 ss << "image-" << std::setw(5) << std::setfill('0') << i << ".tif";
                                 image_paths.push_back(input_dir / ss.str());

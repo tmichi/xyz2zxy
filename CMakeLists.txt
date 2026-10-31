@@ -12,7 +12,10 @@ SET(CMAKE_CXX_EXTENSIONS OFF)
 IF(MSVC)
     SET(OpenCV_DIR "C:/opencv/build") #directory where OpenCVConfig.cmake exists
 ENDIF(MSVC)
-find_package(OpenCV 4.5.0 REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS core imgcodecs imgproc)
+if(OpenCV_VERSION VERSION_LESS "4.5.0")
+    message(FATAL_ERROR "OpenCV 4.5.0 or later is required")
+endif()
 find_package(Threads REQUIRED)
 
 if (APPLE)
@@ -51,6 +54,7 @@ CONFIGURE_FILE(xyz2zxy_version.hpp.in xyz2zxy_version.hpp)
 CONFIGURE_FILE(README.txt.in README.txt)
 ADD_EXECUTABLE(xyz2zxy xyz2zxy_main.cpp)
 ADD_EXECUTABLE(xyz2yzx xyz2yzx_main.cpp xyz2zxy.hpp)
+include(CTest)
 ADD_SUBDIRECTORY(tests)
 
 #
