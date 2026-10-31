@@ -26,20 +26,19 @@ Convert XY cross-sectional images into ZX cross-sectional images.
 
 ## Requirements
 
--   CMake (≥ 3.10)
--   C++17
--   OpenCV (≥ 4.5.0)
--   [fmt](https://fmt.dev) (≥ 8.0.1)
+* CMake (> v.3.10.*)
+* C++20
+* OpenCV (> v.4.5.0)
+* fmt (https://fmt.dev) (v.8.0.1 or later)  
 
-## Build and Test
-
-### Unix-like systems with CMake
-
-``` bash
-mkdir build
-cd build
-cmake ..
-make
+## Build and Test 
+### Unix-like System with CMake 
+```bash
+% mkdir build
+% cd build
+% cmake ..
+% make  
+%
 ```
 
 ### Validation
@@ -55,7 +54,32 @@ validation ok
 
 -   `make check` creates sample data and validates the results.
 
-### Windows (Visual Studio)
+* `ctest --test-dir build --output-on-failure` runs buffer-reuse and pixel-level
+  regression tests for both converters, PNG/TIFF, 8/16-bit grayscale/color/alpha,
+  partial batches, oversized `-n`, and distinct multipage TIFF frames.
+
+### Memory usage
+
+* Input image slots and per-worker slice buffers are reused across batches.
+  These buffers are destroyed before final output planes are allocated.
+* Concatenation reads one temporary chunk at a time and transposes it directly
+  into a reusable output plane. Full and partial chunks have separate reusable
+  buffers, so a short last batch does not force reallocation for every plane.
+* Decoding uses `imdecode` with a destination Mat (compatible with OpenCV 4.5).
+  Encoded file storage is also reused: one file buffer during input batching,
+  and one temporary-chunk file buffer per concatenation worker. This adds
+  bounded encoded-file storage; codecs and the system allocator can retain
+  their own memory even after Mat buffers are released.
+* Multipage TIFF extraction keeps only the current page. Previously,
+  `imreadmulti` appended every page to a retained vector and the first page was
+  repeatedly written. Each actual page is now written correctly.
+* `-n` still controls the number of input images in memory. Output memory also
+  scales with the number of workers (at most the hardware concurrency and the
+  number of output planes). `peak_memory_size` reports the process high-water
+  mark, not its current resident memory, and cannot decrease during a run.
+
+
+### Windows (Visual Studio )
 
 -   Use CMake to generate the solution file.
 -   Set `CMAKE_PREFIX_PATH` to the installation directories of OpenCV

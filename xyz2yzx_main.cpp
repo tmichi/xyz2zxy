@@ -31,73 +31,80 @@ int main(const int argc, const char **argv) {
                 int step = 100;
                 std::filesystem::path extension = ".tif";
                 std::vector<int> params;
+
                 xyz2zxy::init_arguments("xyz2yzx", arg, input_dir, outputDir, step, extension, params);
 
                 std::filesystem::path tmpDir = outputDir.string() + "_temp";
                 xyz2zxy::create_directory(tmpDir);
-                std::vector<std::filesystem::path> image_paths = xyz2zxy::list_files(input_dir, tmpDir);
+                std::vector<std::filesystem::path> image_paths = xyz2zxy::list_files(input_dir, tmpDir, extension);
 
                 xyz2zxy::create_directory(outputDir);
 
                 auto get_tmp_filename = [&tmpDir, &extension](const uint32_t y, const uint32_t z) {
-                        std::stringstream ss;
-                        ss << tmpDir.string() << "/" << z << "/" << "image-" << std::setw(5) << std::setfill('0') << y << extension.string();
-                        return ss.str();
-                        //        return fmt::format("{}/{}/image-{:05d}{}", tmpDir.string(), z, y, extension.string());
+                        return std::format("{}/{}/image-{:05d}{}", tmpDir.string(), z, y, extension.string());
                 };
 
-                uint32_t sx, sy, sz;
-                xyz2zxy::get_volume_size(image_paths, sx, sy, sz);
+                auto [sx, sy, sz] = xyz2zxy::get_volume_size(image_paths);
 
                 std::string step1Str{"Step1 divide"};
                 xyz2zxy::progress_bar(mtx, 0u, sz, step1Str);
                 mi::thread_safe_counter<uint32_t> counter;
-                for (uint32_t z = 0; z < sz; z += step) {
-                        std::vector<cv::Mat> images;
-                        const uint32_t end = (z + step < sz) ? z + step : sz;
-                        std::transform(image_paths.begin() + z, image_paths.begin() + end, std::back_inserter(images), [](auto &f) {
-                                return cv::imread(f.string(), cv::IMREAD_UNCHANGED);
-                        });
-                        create_directory(tmpDir / std::to_string(z));
-                        mi::repeat_mt([&counter, &images, &sx, &sy, &z, &get_tmp_filename, &params]() {
-                                for (uint32_t x = counter.get(); x < sx; x = counter.get()) {
-                                        std::vector<cv::Mat> local_images;
-                                        std::transform(images.begin(), images.end(), std::back_inserter(local_images),[&x, &sy](auto &image) { return cv::Mat(image, cv::Rect(cv::Point( int(x), 0), cv::Size(1, int(sy)))); }); // cut
-                                        cv::Mat local;
-                                        cv::hconcat(local_images, local);
-                                        xyz2zxy::write_image(get_tmp_filename(x, z), local, params);
+                { // Release the input batch before allocating final output planes.
+                        std::vector<cv::Mat> images(std::min<uint32_t>(step, sz));
+                        std::vector<uchar> encoded;
+                        // Each worker keeps its slice buffer across both slices and batches.
+                        std::vector<cv::Mat> slices(xyz2zxy::worker_count(sx));
+                        for (uint32_t z = 0; z < sz; z += step) {
+                                const uint32_t count = std::min<uint32_t>(step, sz - z);
+                                for (uint32_t i = 0; i < count; ++i) {
+                                        xyz2zxy::read_image(image_paths[z + i].string(), images[i], encoded, cv::IMREAD_UNCHANGED);
                                 }
-                        });
-                        xyz2zxy::progress_bar(mtx, z + uint32_t(images.size()), sz, step1Str);
-                        counter.reset(0);
+                                create_directory(tmpDir / std::to_string(z));
+                                mi::thread_safe_counter<unsigned> worker;
+                                mi::repeat_mt([&]() {
+                                        cv::Mat &local = slices[worker.get()];
+                                        local.create(int(sy), int(count), images[0].type());
+                                        for (uint32_t x = counter.get(); x < sx; x = counter.get()) {
+                                                for (uint32_t i = 0; i < count; ++i) {
+                                                        images[i].col(int(x)).copyTo(local.col(int(i)));
+                                                }
+                                                xyz2zxy::write_image(get_tmp_filename(x, z), local, params);
+                                        }
+                                }, static_cast<unsigned>(slices.size()));
+                                xyz2zxy::progress_bar(mtx, z + count, sz, step1Str);
+                                counter.reset(0);
+                        }
                 }
                 std::cerr << std::endl;
                 mi::thread_safe_counter<uint32_t> num_of_finished;
                 xyz2zxy::progress_bar<uint32_t>(mtx, num_of_finished.get(), sx, "Step2 concat");
                 mi::repeat_mt([&]() {
+                                cv::Mat full_chunk, tail_chunk, result;
+                                std::vector<uchar> encoded;
                                 for (uint32_t x = counter.get(); x < sx; x = counter.get()) {
-                                        std::vector<cv::Mat> local_images;
                                         for (uint32_t z = 0; z < sz; z += step) {
-                                                local_images.push_back(cv::imread(get_tmp_filename(x, z), cv::IMREAD_ANYDEPTH | cv::IMREAD_ANYCOLOR));
+                                                const uint32_t count = std::min<uint32_t>(step, sz - z);
+                                                cv::Mat &chunk = count == uint32_t(step) ? full_chunk : tail_chunk;
+                                                xyz2zxy::read_image(get_tmp_filename(x, z), chunk, encoded,
+                                                                   cv::IMREAD_ANYDEPTH | cv::IMREAD_ANYCOLOR);
+                                                result.create(int(sz), int(sy), chunk.type());
+                                                // flip vertically + rotate clockwise is a transpose.
+                                                // Write each chunk directly into the final plane.
+                                                cv::Mat destination = result.rowRange(int(z), int(z + count));
+                                                cv::transpose(chunk, destination);
                                         }
-                                        cv::Mat result;
-                                        cv::hconcat(local_images, result);
-                                        cv::flip(result, result, 0); // mirroring
-                                        cv::rotate(result, result, cv::ROTATE_90_CLOCKWISE);
-                                        // xyz2zxy::write_image(outputDir.string() + "/" + fmt::format("image-{:05d}.tif", x), result,params);
-                                        std::stringstream ss;
-                                        ss << outputDir.string() << "/" << "image-" << std::setw(5) << std::setfill('0') << x << extension.string();
-                                        xyz2zxy::write_image(ss.str(), result, params);
+                                        const std::filesystem::path outputFile = outputDir / std::format("image-{:05d}{}", x, extension.string());
+                                        xyz2zxy::write_image(outputFile.string(), result, params);
                                         xyz2zxy::progress_bar(mtx, num_of_finished.get(), sx, "Step2 concat");
                                 }
-                        });
+                        }, xyz2zxy::worker_count(sx));
                 std::cerr << std::endl;
                 std::filesystem::remove_all(tmpDir);
                 xyz2zxy::print_peak_memory_size();
         } catch (std::runtime_error &e) {
                 std::cerr << e.what() << std::endl;
         } catch (...) {
-                std::cerr << "Unknown error" << std::endl;
+                std::cerr << "Unknown error." << std::endl;
         }
         return EXIT_SUCCESS;
 }
